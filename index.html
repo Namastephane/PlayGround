@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimberCAO — Logiciel CAO bois type SEMA</title>
+<style>
+:root{--bg:#14171c;--panel:#1d2229;--panel2:#232a33;--line:#2e3742;--txt:#e8edf2;--mut:#9aa6b2;--acc:#f59e0b;--acc2:#22c55e;--blue:#38bdf8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0f1216;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px}.logo .cube{width:26px;height:26px;background:linear-gradient(135deg,#f59e0b,#b45309);border-radius:6px;display:grid;place-items:center;color:#111;font-weight:900}
+.badge{font-size:11px;background:#26303c;border:1px solid var(--line);padding:2px 8px;border-radius:20px;color:var(--mut)}
+header button,.btn{background:#242c36;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:12.5px;cursor:pointer}
+header button:hover,.btn:hover{background:#2e3742}header button.primary{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+header button.green{background:var(--acc2);color:#05220f;border-color:var(--acc2);font-weight:700}
+main{flex:1;display:grid;grid-template-columns:172px 1fr 320px;min-height:0}
+aside.tools{background:var(--panel);border-right:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+aside.tools h4,aside.right h4{margin:8px 2px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+.tool{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--txt);cursor:pointer;font-size:13px;text-align:left;width:100%}
+.tool .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:#2b3440;font-size:15px;flex-shrink:0}
+.tool.active{background:#2b3440;border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.tool small{display:block;color:var(--mut);font-size:11px}
+section.center{display:flex;flex-direction:column;min-width:0;background:#0e1115}
+.viewtabs{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.viewtabs button{background:#1c232d;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}
+.viewtabs button.active{background:var(--txt);color:#111;font-weight:700}
+.viewtabs .sp{flex:1}.hint{font-size:11.5px;color:var(--mut)}
+#wrap{flex:1;position:relative;min-height:0}#c2d,#c3d,#csec,#ccao{position:absolute;inset:0;width:100%;height:100%;display:block}
+#caobar{display:none;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:#11161c;font-size:12px}
+#caobar.show{display:flex}#caobar select,#caobar button{background:#1c232d;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}
+#caobar label{display:flex;gap:4px;align-items:center;color:var(--mut)}
+#caobar button.solid{background:var(--acc);color:#111;font-weight:700;border-color:var(--acc)}
+@media print{header,aside.tools,aside.right,.viewtabs,#statusbar,#caobar{display:none!important}main{display:block}section.center{height:100vh}#wrap{position:fixed;inset:0}}
+/* ===== Atelier CAO façon SEMA Learn ===== */
+#semaUI{position:absolute;inset:0;display:none;font-size:11px;color:#2b2f26;pointer-events:none}
+#semaUI.show{display:block}
+#semaUI button{pointer-events:auto}
+#semaTab{position:absolute;top:0;left:0;display:flex;align-items:center;gap:6px;background:#f2f4ee;border:1px solid #c4cbb8;border-bottom:none;border-radius:6px 6px 0 0;padding:3px 10px;font-size:11.5px;pointer-events:auto}
+#semaTab b{cursor:pointer;color:#7a8272}#semaTab b:hover{color:#c00}
+#semaMenu{position:absolute;top:22px;left:0;right:0;display:flex;align-items:center;gap:2px;background:linear-gradient(#f4f6f0,#e2e7d9);border-top:1px solid #c4cbb8;border-bottom:1px solid #c4cbb8;padding:2px 6px;flex-wrap:wrap;pointer-events:auto}
+#semaMenu .mi{padding:2px 7px;border-radius:4px;cursor:default;font-size:11.5px}#semaMenu .mi:hover{background:#d3dac6}
+#semaMenu .sep{width:1px;height:16px;background:#c4cbb8;margin:0 4px}
+#semaMenu button{background:#f7f9f4;border:1px solid #c4cbb8;border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;color:#2b2f26}
+#semaMenu button:hover{background:#fff;border-color:#8a937e}#semaMenu button.on{background:#cfe0b8;border-color:#7a9a5a;font-weight:700}
+#semaRight{position:absolute;top:50px;right:0;bottom:56px;width:212px;background:#eef1e8;border-left:1px solid #c4cbb8;display:flex;flex-direction:column;pointer-events:auto;overflow-y:auto}
+#semaRight .hd{background:linear-gradient(#f4f6f0,#dde3d2);border-bottom:1px solid #c4cbb8;padding:3px 8px;font-weight:700;font-size:11px;display:flex;justify-content:space-between}
+#semaRight .bd{padding:4px 6px}
+.stool{display:flex;align-items:center;gap:7px;width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 6px;font-size:11.5px;cursor:pointer;color:#2b2f26;text-align:left}
+.stool:hover{background:#e2e8d6}.stool.on{background:#fff;border-color:#7a9a5a;box-shadow:0 0 0 1px #7a9a5a}
+.stool .g{width:15px;text-align:center;color:#5a6353}
+#motifGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.sw{height:26px;border:1px solid #9aa392;border-radius:3px;cursor:pointer;background-color:#fff}
+.sw.on{outline:2px solid #4a7ac9;outline-offset:-1px}
+.sw span{display:block;font-size:8px;line-height:1.1;color:#333;text-align:center;overflow:hidden;white-space:nowrap}
+#donGrid{display:grid;grid-template-columns:86px 1fr;gap:0;border:1px solid #c4cbb8;font-size:11px}
+#donGrid .k{background:#e4e9da;padding:3px 5px;border-bottom:1px solid #d3d9c7;color:#3c5a8a}
+#donGrid .v{background:#fff;padding:1px 3px;border-bottom:1px solid #e4e9da;display:flex}
+#donGrid input,#donGrid select{border:none;background:transparent;width:100%;font-size:11px;color:#222;outline:none}
+#donGrid input[type=color]{height:18px;padding:0}
+#semaBottom{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#eef1e8,#dde3d2);border-top:1px solid #c4cbb8;pointer-events:auto}
+#semaBottom .dlg{background:#7a8a6a;color:#fff;font-size:11px;padding:2px 8px;font-weight:700}
+#semaBottom .row2{display:flex;align-items:center;gap:8px;padding:4px 8px;flex-wrap:wrap}
+#semaBottom input[type=number],#semaBottom input[type=text]{width:70px;border:1px solid #9aa392;border-radius:3px;padding:2px 5px;font-size:11px}
+#semaBottom .stat{margin-left:auto;display:flex;gap:14px;color:#3c4438}
+#semaStatus{position:absolute;left:0;right:0;bottom:0;display:none}
+.sema-note{padding:4px 6px;color:#6a7263;font-size:10px;line-height:1.4}
+#statusbar{display:flex;gap:14px;padding:6px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);background:#0f1216;flex-wrap:wrap}
+aside.right{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.card h4{margin:0 0 8px}.row{display:flex;gap:6px;margin-bottom:6px;align-items:center}.row label{flex:0 0 92px;font-size:12px;color:var(--mut)}
+.row input,.row select{flex:1;background:#141a21;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 8px;font-size:12.5px;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.kpi div{background:#141a21;border:1px solid var(--line);border-radius:8px;padding:7px;text-align:center}.kpi b{display:block;font-size:14px}.kpi span{font-size:10.5px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:11.5px}th,td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left}th{color:var(--mut);font-weight:600;font-size:10.5px;text-transform:uppercase}
+.assist{display:grid;gap:6px}.assist button{text-align:left}
+footer.note{font-size:11px;color:var(--mut);line-height:1.5}
+@media(max-width:1100px){main{grid-template-columns:150px 1fr}aside.right{display:none}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo"><div class="cube">⌂</div> TimberCAO <span class="badge">CAO bois 2D/3D · type SEMA</span></div>
+<button class="primary" id="bDemo">🏠 Projet démo</button>
+<button id="bNew">＋ Nouveau</button>
+<button id="bSave">💾 Sauver</button>
+<button id="bLoad">📂 Charger</button>
+<button id="bJson">⇩ JSON</button>
+<button id="bCsv">⇩ Débit CSV</button>
+<button id="bBtl" title="Export format machine (BTL placeholder)">⇩ Export machine</button>
+<button class="green" id="bHelp">? Aide</button>
+</header>
+<main>
+<aside class="tools">
+<h4>Outils de saisie</h4>
+<button class="tool active" data-tool="select"><span class="ic">➤</span><span>Sélection<small>Déplacer / éditer</small></span></button>
+<button class="tool" data-tool="wall"><span class="ic">🧱</span><span>Paroi / Mur<small>ossature bois</small></span></button>
+<button class="tool" data-tool="beam"><span class="ic">🪵</span><span>Poutre / Panne<small>section b×h</small></span></button>
+<button class="tool" data-tool="rafter"><span class="ic">📐</span><span>Chevron<small>toiture</small></span></button>
+<button class="tool" data-tool="post"><span class="ic">📍</span><span>Poteau / Montant<small>section carrée</small></span></button>
+<button class="tool" data-tool="slab"><span class="ic">▦</span><span>Plancher / Dalle<small>surface</small></span></button>
+<button class="tool" data-tool="stair"><span class="ic">🪜</span><span>Escalier<small>volée droite</small></span></button>
+<button class="tool" data-tool="opening"><span class="ic">🚪</span><span>Porte / Fenêtre<small>ouverture</small></span></button>
+<button class="tool" data-tool="dim"><span class="ic">📏</span><span>Cotation<small>mesure libre</small></span></button>
+<h4>Affichage plan</h4>
+<div class="row"><label>Zoom</label><input type="range" id="zoom" min="8" max="90" value="34"></div>
+<div class="row"><label>Grille (m)</label><select id="gridStep"><option>0.25</option><option selected>0.5</option><option>1</option></select></div>
+<div class="row"><label>Magnétisme</label><select id="snap"><option value="0.05">0.05 m</option><option value="0.1" selected>0.10 m</option><option value="0.25">0.25 m</option><option value="0">OFF</option></select></div>
+<button class="btn" id="bFit">⤢ Recadrer</button>
+<button class="btn" id="bDel" style="border-color:#7f1d1d;color:#fca5a5">🗑 Supprimer sélection (Suppr)</button>
+<h4>Calques</h4>
+<div id="layers"></div>
+</aside>
+<section class="center">
+<div class="viewtabs">
+<button class="active" data-view="plan">◩ Plan 2D</button>
+<button data-view="cao">✏ Mode CAO</button>
+<button data-view="v3d">⬢ 3D / Monde virtuel</button>
+<button data-view="sec">⧉ Élévation / Coupe</button>
+<button data-view="list">≡ Quantitatif / Débit</button>
+<span id="v3dstyle" style="display:none;gap:4px;align-items:center;font-size:12px;color:var(--mut)">Style 3D:<button data-3d="wire" title="Filaire type CAO">CAO filaire</button><button data-3d="shaded" class="active" title="Ombré réaliste">🌳 Virtuel</button></span>
+<span class="sp"></span><span class="hint" id="hint">Cliquez-glissez pour dessiner une paroi. Molette = zoom, clic-molette / espace-glisser = panoramique.</span>
+</div>
+<div id="caobar">
+<span style="font-weight:700">✏ Mode CAO — dessin technique</span>
+<label>Fond <select id="caoTheme"><option value="white">⬜ Blanc plan</option><option value="blue">🟦 Bleu blueprint</option><option value="dark">⬛ Noir CAO</option></select></label>
+<label><input type="checkbox" id="caoDims" checked> Cotations auto</label>
+<label><input type="checkbox" id="caoHatch" checked> Hachures bois</label>
+<label><input type="checkbox" id="caoLabels" checked> Étiquettes</label>
+<label><input type="checkbox" id="caoCart" checked> Cartouche</label>
+<label>Échelle <select id="caoScale"><option value="auto">Auto</option><option value="50">1:50</option><option value="100">1:100</option><option value="20">1:20</option></select></label>
+<button class="solid" id="bSvg">⇩ Export SVG</button>
+<button id="bPrint">🖨 Imprimer</button>
+</div>
+<div id="wrap">
+<canvas id="c2d"></canvas>
+<canvas id="ccao" style="display:none"></canvas>
+<div id="semaUI">
+<div id="semaTab"><span>◧ elevation rive biaise</span><b id="semaX" title="Fermer">×</b></div>
+<div id="semaMenu">
+<span class="mi"><u>F</u>ichier</span><span class="mi"><u>É</u>dition</span><span class="mi"><u>A</u>ffichage</span><span class="mi">Divers</span><span class="mi"><u>F</u>enêtre</span><span class="mi">?</span>
+<span class="sep"></span>
+<button id="smFit" title="Recadrer">⤢</button><button id="smZm" title="Zoom +">🔍+</button><button id="smZd" title="Zoom −">🔍−</button>
+<span class="sep"></span>
+<button id="smLine" title="Ligne">╱</button><button id="smRect" title="Rectangle">▭</button><button id="smCirc" title="Cercle">○</button><button id="smTxt" title="Texte">A</button><button id="smArr" title="Flèche">→</button>
+<span class="sep"></span>
+<button id="smDel" title="Effacer sélection">⌫</button>
+<span style="color:#7a8272;margin-left:auto">00 Réglage initial ▾ · Vue en plan standard</span>
+</div>
+<div id="semaRight">
+<div class="hd"><span>CAO</span><span>▾</span></div>
+<div class="bd" id="semaTools"></div>
+<div class="hd"><span>🎨 franck 22 02 08 — Motifs</span><span>▾</span></div>
+<div class="bd"><div id="motifGrid"></div></div>
+<div class="hd"><span>Prévisualisations · Esquisse</span><span>▾</span></div>
+<div class="bd"><div id="semaPrev" style="height:26px;border:1px solid #c4cbb8;background:#fff"></div></div>
+<div class="hd"><span>Données</span><span>▾</span></div>
+<div class="bd"><div id="donGrid"></div></div>
+<div class="sema-note">Épure « rive biaise » générée depuis le projet (pente, portée). Dessinez par-dessus : lignes, rectangles, cercles, textes, flèches.</div>
+</div>
+<div id="semaBottom">
+<div class="dlg">Masque de dialogue</div>
+<div class="row2">
+<span>⦜ de :</span><select id="smFrom"><option value="">—</option></select>
+<span>Angle :</span><input type="number" id="smAngle" step="0.1" value="146.3"> <span>Long. :</span><input type="number" id="smLong" step="0.01" value="189.98">
+<span id="smInfo" style="color:#3c4438"></span>
+<span class="stat"><span id="smCount">0 pièces sont marquées.</span><span>X : <b id="smX">–</b> &nbsp; Y : <b id="smY">–</b></span><span>●</span></span>
+</div>
+</div>
+</div>
+<canvas id="c3d" style="display:none"></canvas>
+<canvas id="csec" style="display:none"></canvas>
+<div id="plist" style="display:none;position:absolute;inset:0;overflow:auto;padding:14px;background:#0e1115"></div>
+</div>
+<div id="statusbar"><span id="stPos">x: – y: –</span><span id="stSel">0 élément</span><span id="stTot">Volume: – · Poids: – · Coût: –</span><span id="stMsg"></span></div>
+</section>
+<aside class="right">
+<div class="card"><h4>⚙️ Propriétés <span id="pId" style="color:var(--mut);font-weight:400"></span></h4><div id="props"><p style="color:var(--mut);font-size:12.5px">Sélectionnez un élément, ou dessinez-en un nouveau.<br><br>Double-clic = éditer · <b>Suppr</b> = effacer · flèches = déplacer.</p></div></div>
+<div class="card"><h4>🧰 Assistants SEMA-like</h4><div class="assist">
+<button class="btn" id="aBat">🏠 Assistant Bâtiment <small style="color:var(--mut)">— rectangle + plancher + 4 parois</small></button>
+<button class="btn" id="aOss">🪵 Assistant Ossature <small style="color:var(--mut)">— montants tous les 60 cm</small></button>
+<button class="btn" id="aToit">⛺ Assistant Toiture <small style="color:var(--mut)">— faîtage + chevrons + pente</small></button>
+<button class="btn" id="aEsc">🪜 Assistant Escalier <small style="color:var(--mut)">— volée + marches</small></button>
+</div>
+<div class="grid2" style="margin-top:8px">
+<div class="row"><label>L (m)</label><input id="inL" type="number" value="6" step="0.5"></div>
+<div class="row"><label>l (m)</label><input id="inW" type="number" value="4" step="0.5"></div>
+<div class="row"><label>H (m)</label><input id="inH" type="number" value="2.5" step="0.1"></div>
+<div class="row"><label>Pente°</label><input id="inP" type="number" value="30" step="1"></div>
+</div></div>
+<div class="card"><h4>📦 Quantitatif / Devis</h4><div class="kpi"><div><b id="kVol">–</b><span>Volume m³</span></div><div><b id="kMas">–</b><span>Poids kg</span></div><div><b id="kPri">–</b><span>Coût € HT</span></div></div>
+<div id="qt" style="margin-top:8px;max-height:220px;overflow:auto"></div></div>
+<div class="card"><h4>🪵 Matériaux</h4><div id="mats" style="font-size:12px;color:var(--mut);line-height:1.7">Épicéa C24 · Douglas · Chêne · CLT · Acier<br>Modifiables par élément dans Propriétés.</div></div>
+<div class="card footer note">TimberCAO — démo CAO bois inspirée de SEMA (construction bois, escaliers, zinguerie). Saisie 2D synchro 3D, cotation auto, listes de débit/commande, export machine (BTL). Projet stocké en local. Fait pour maquette / chiffrage, pas pour fabrication sans vérification structurelle.</div>
+</aside>
+</main>
+<script>
+"use strict";
+/* ===== Modèle ===== */
+const MATS={epicea:{n:"Épicéa C24",d:460,p:450,c:"#d9a45b"},douglas:{n:"Douglas",d:540,p:620,c:"#b07a3f"},chene:{n:"Chêne",d:700,p:1100,c:"#8a5a2b"},clt:{n:"CLT / Lamellé",d:480,p:780,c:"#cbb27a"},acier:{n:"Acier / Ferrure",d:7850,p:3200,c:"#9aa6b2"}};
+let els=[],dims=[],sel=null,tool="select",uid=1;
+let view="plan";
+let cam={x:3,y:2,s:34}; // centre monde + px/m
+let cam3={a:-0.7,p:0.9,s:40,tx:0,ty:0};
+const nid=p=>p+(uid++);
+const snapV=v=>{const s=parseFloat(document.getElementById('snap').value);if(!s)return v;return Math.round(v/s)*s;};
+/* ===== Projet démo : chalet 6x4 ===== */
+function demo(){els=[];dims=[];uid=1;sel=null;
+const H=2.5;
+els.push(mk('slab',0,0,6,4,{th:.2,h0:0,mat:'clt',label:'Plancher CLT'}));
+els.push(mk('wall',0,0,6,0,{th:.14,h:H,mat:'epicea',label:'Paroi N'}));
+els.push(mk('wall',6,0,6,4,{th:.14,h:H,mat:'epicea',label:'Paroi E'}));
+els.push(mk('wall',6,4,0,4,{th:.14,h:H,mat:'epicea',label:'Paroi S'}));
+els.push(mk('wall',0,4,0,0,{th:.14,h:H,mat:'epicea',label:'Paroi O'}));
+els.push(mk('beam',0,2,6,2,{b:.12,h:.24,z:H,mat:'epicea',label:'Panne faîtière'}));
+els.push(mk('post',0,0,0,0,{s:.14,h:H,mat:'chene',label:'Poteau'}));
+els.push(mk('post',6,0,0,0,{s:.14,h:H,mat:'chene',label:'Poteau'}));
+els.push(mk('post',6,4,0,0,{s:.14,h:H,mat:'chene',label:'Poteau'}));
+els.push(mk('post',0,4,0,0,{s:.14,h:H,mat:'chene',label:'Poteau'}));
+for(let i=0;i<=6;i++){els.push(mk('post',i,0,0,0,{s:.09,h:H,mat:'epicea',label:'Montant'}));els.push(mk('post',i,4,0,0,{s:.09,h:H,mat:'epicea',label:'Montant'}));}
+els.push(mk('stair',3.6,.4,1,.0+2.4,{steps:13,htot:H-0.2,sens:'+Y',mat:'chene',label:'Escalier'}));
+els.push(mk('opening',1.2,0,1.0,.0,{oh:2.1,ot:'Porte',mat:'chene',label:'Porte'}));
+els.push(mk('opening',3.8,4,1.4,.0,{oh:1.2,ot:'Fenêtre',mat:'epicea',label:'Fenêtre'}));
+roofGen(6,4,H,30,false);
+refresh();msg("Projet démo chargé : chalet 6×4 m, ossature + toiture 30°.");
+}
+function mk(type,a,b,c,d,o={}){const e=Object.assign({id:nid(type[0].toUpperCase()),type},o);
+if(type==='wall'||type==='beam'||type==='rafter'){e.x1=a;e.y1=b;e.x2=c;e.y2=d;}
+else if(type==='slab'||type==='stair'){e.x=a;e.y=b;e.w=c;e.h=d;}
+else if(type==='opening'){e.x=a;e.y=b;e.w=c;}
+else{e.x=a;e.y=b;}
+if(type==='wall'){e.th=e.th||.14;e.h=e.h??2.5;e.mat=e.mat||'epicea';}
+if(type==='beam'){e.b=e.b||.12;e.h=e.h??0.24;e.z=e.z??2.5;e.mat=e.mat||'epicea';}
+if(type==='rafter'){e.b=e.b||.08;e.h=e.h??.18;e.z=e.z??2.5;e.mat=e.mat||'epicea';}
+if(type==='post'){e.s=e.s||.14;e.h=e.h??2.5;e.mat=e.mat||'epicea';}
+if(type==='slab'){e.th=e.th??.2;e.h0=e.h0??0;e.mat=e.mat||'clt';}
+if(type==='stair'){e.steps=e.steps||13;e.htot=e.htot??2.3;e.sens=e.sens||'+Y';e.mat=e.mat||'chene';}
+if(type==='opening'){e.oh=e.oh||1.2;e.ot=e.ot||'Fenêtre';e.mat=e.mat||'epicea';}
+e.label=e.label||type;return e;}
+function roofGen(L,W,H,deg,silent){els=els.filter(e=>e.type!=='rafter'&&e.label!=='Panne faîtière auto');
+const a=deg*Math.PI/180,rise=Math.tan(a)*(W/2),n=Math.max(3,Math.round(L/0.7));
+els.push(mk('beam',0,W/2,L,W/2,{b:.14,h:.26,z:H+rise,mat:'douglas',label:'Panne faîtière auto'}));
+for(let i=0;i<=n;i++){const x=(L/n)*i;
+els.push(mk('rafter',x,0,x,W/2,{b:.08,h:.18,z:H,mat:'epicea',label:'Chevron N'}));
+els.push(mk('rafter',x,W,x,W/2,{b:.08,h:.18,z:H,mat:'epicea',label:'Chevron S'}));}
+if(!silent){refresh();msg(`Toiture générée : pente ${deg}°, ${2*(n+1)} chevrons, faîtage à ${(H+rise).toFixed(2)} m.`);}}
+/* ===== Quantitatif ===== */
+function metrics(e){const M=MATS[e.mat]||MATS.epicea;let len=0,vol=0;
+const segL=e=>Math.hypot(e.x2-e.x1,e.y2-e.y1);
+if(e.type==='wall'){len=segL(e);vol=len*e.th*e.h;}
+else if(e.type==='beam'){len=segL(e);vol=len*e.b*e.h;}
+else if(e.type==='rafter'){len=Math.hypot(segL(e),0)+0;vol=segL(e)*e.b*e.h*1.15;}
+else if(e.type==='post'){len=e.h;vol=e.s*e.s*e.h;}
+else if(e.type==='slab'){len=Math.max(e.w,e.h);vol=e.w*e.h*e.th;}
+else if(e.type==='stair'){len=Math.hypot(Math.max(e.w,e.h),e.htot);vol=e.w*Math.max(e.w,e.h)*.06+e.steps*.02;}
+else if(e.type==='opening'){len=e.w;vol=0;}
+const mass=vol*M.d,price=vol*M.p;return{len,vol,mass,price};}
+function totals(){let v=0,m=0,p=0;for(const e of els){const t=metrics(e);v+=t.vol;m+=t.mass;p+=t.price;}return{v,m,p};}
+/* ===== Canvas helpers ===== */
+const c2d=document.getElementById('c2d'),c3d=document.getElementById('c3d'),csec=document.getElementById('csec'),ccao=document.getElementById('ccao');
+const ctx2=c2d.getContext('2d'),ctx3=c3d.getContext('2d'),ctxS=csec.getContext('2d'),ctxC=ccao.getContext('2d');
+let style3d='shaded';
+const caoOpts=()=>({theme:document.getElementById('caoTheme').value,dims:document.getElementById('caoDims').checked,hatch:document.getElementById('caoHatch').checked,labels:document.getElementById('caoLabels').checked,cart:document.getElementById('caoCart').checked});
+function fitCanvas(c){const r=c.parentElement.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);c.width=r.width*d;c.height=r.height*d;c.getContext('2d').setTransform(d,0,0,d,0,0);return{r,c};}
+const W2M=x=>(x-c2d.clientWidth/2)/cam.s+cam.x, H2M=y=>(y-c2d.clientHeight/2)/cam.s+cam.y;
+const M2WX=x=>(x-cam.x)*cam.s+c2d.clientWidth/2, M2WY=y=>(y-cam.y)*cam.s+c2d.clientHeight/2;
+/* ===== Rendu 2D ===== */
+function draw2(){const{ r }=fitCanvas(c2d);const W=r.width,Ht=r.height;ctx2.clearRect(0,0,W,Ht);
+ctx2.fillStyle="#0e1115";ctx2.fillRect(0,0,W,Ht);
+const gs=parseFloat(document.getElementById('gridStep').value);
+const x0=Math.floor(cam.x-W/cam.s/2)-1,x1=Math.ceil(cam.x+W/cam.s/2)+1,y0=Math.floor(cam.y-Ht/cam.s/2)-1,y1=Math.ceil(cam.y+Ht/cam.s/2)+1;
+ctx2.lineWidth=1;
+for(let gx=Math.ceil(x0/gs)*gs;gx<x1;gx+=gs){const px=M2WX(gx);ctx2.strokeStyle=Math.abs(gx)<1e-9?"#3b4756":"#1e2530";ctx2.beginPath();ctx2.moveTo(px,0);ctx2.lineTo(px,Ht);ctx2.stroke();
+if(gs>=0.5){ctx2.fillStyle="#5b6a7c";ctx2.font="10px sans-serif";ctx2.fillText(gx.toFixed(1),px+3,Ht-6);}}
+for(let gy=Math.ceil(y0/gs)*gs;gy<y1;gy+=gs){const py=M2WY(gy);ctx2.strokeStyle=Math.abs(gy)<1e-9?"#3b4756":"#1e2530";ctx2.beginPath();ctx2.moveTo(0,py);ctx2.lineTo(W,py);ctx2.stroke();
+if(gs>=0.5){ctx2.fillStyle="#5b6a7c";ctx2.font="10px sans-serif";ctx2.fillText(gy.toFixed(1),4,py-3);}}
+const drawOrder=[...els].sort((a,b)=>(a.type==='slab'?-1:0)-(b.type==='slab'?-1:0));
+for(const e of drawOrder)drawEl2(e);
+for(const d of dims)drawDim(d);
+if(draft)drawDraft();
+if(sel){ctx2.strokeStyle="#f59e0b";ctx2.setLineDash([6,4]);ctx2.lineWidth=2;const b=bbox(sel);if(b){ctx2.strokeRect(M2WX(b.x0)-6,M2WY(b.y0)-6,(b.x1-b.x0)*cam.s+12,(b.y1-b.y0)*cam.s+12);}ctx2.setLineDash([]);}
+c2Glow(W,Ht);}
+function c2Glow(W,Ht){ctx2.fillStyle="rgba(232,237,242,.75)";ctx2.font="11px sans-serif";ctx2.fillText("Plan — vue de dessus · Nord ↑ · cotes en mètres",10,16);}
+function drawEl2(e){const isSel=sel&&sel.id===e.id;const M=MATS[e.mat]||MATS.epicea;
+if(e.type==='slab'){ctx2.fillStyle=isSel?"rgba(245,158,11,.35)":"rgba(203,178,122,.22)";ctx2.strokeStyle=M.c;ctx2.lineWidth=isSel?2.5:1.2;
+ctx2.fillRect(M2WX(e.x),M2WY(e.y),e.w*cam.s,e.h*cam.s);ctx2.strokeRect(M2WX(e.x),M2WY(e.y),e.w*cam.s,e.h*cam.s);
+ctx2.fillStyle="#9aa6b2";ctx2.font="11px sans-serif";ctx2.fillText((e.label||'Dalle')+` ${e.w.toFixed(1)}×${e.h.toFixed(1)}`,M2WX(e.x)+4,M2WY(e.y)+14);return;}
+if(e.type==='stair'){const x=M2WX(e.x),y=M2WY(e.y),w=e.w*cam.s,h=e.h*cam.s;ctx2.fillStyle=isSel?"rgba(245,158,11,.4)":"rgba(56,189,248,.18)";ctx2.fillRect(x,y,w,h);ctx2.strokeStyle=isSel?"#f59e0b":"#38bdf8";ctx2.lineWidth=isSel?2.5:1.5;ctx2.strokeRect(x,y,w,h);
+ctx2.strokeStyle="rgba(232,237,242,.6)";ctx2.lineWidth=1;for(let i=1;i<e.steps;i++){const yy=y+h*i/e.steps;ctx2.beginPath();ctx2.moveTo(x,yy);ctx2.lineTo(x+w,yy);ctx2.stroke();}
+ctx2.fillStyle="#e8edf2";ctx2.font="bold 11px sans-serif";ctx2.fillText("⇧ "+e.steps+" marches",x+4,y+14);return;}
+if(e.type==='post'){const s=e.s*cam.s,x=M2WX(e.x)-s/2,y=M2WY(e.y)-s/2;ctx2.fillStyle=isSel?"#f59e0b":M.c;ctx2.fillRect(x,y,Math.max(4,s),Math.max(4,s));ctx2.strokeStyle="#0e1115";ctx2.strokeRect(x,y,Math.max(4,s),Math.max(4,s));return;}
+if(e.type==='opening'){const x=M2WX(e.x),y=M2WY(e.y),w=e.w*cam.s;ctx2.strokeStyle=isSel?"#f59e0b":"#22c55e";ctx2.lineWidth=isSel?3:2.5;ctx2.beginPath();ctx2.moveTo(x,y);ctx2.lineTo(x+w,y);ctx2.stroke();
+ctx2.fillStyle="#22c55e";ctx2.font="11px sans-serif";ctx2.fillText((e.ot||'Ouv.')+" "+e.w.toFixed(2)+"m",x,y-6);return;}
+// wall / beam / rafter : segments épais
+const ax=M2WX(e.x1),ay=M2WY(e.y1),bx=M2WX(e.x2),by=M2WY(e.y2);
+let th=(e.th||e.b||.12)*cam.s;
+let col=e.type==='wall'?"#e8edf2":e.type==='beam'?"#f59e0b":"#38bdf8";
+if(isSel)col="#f59e0b";
+ctx2.lineCap="round";ctx2.strokeStyle=col;ctx2.lineWidth=Math.max(e.type==='wall'?6:4,th);
+ctx2.beginPath();ctx2.moveTo(ax,ay);ctx2.lineTo(bx,by);ctx2.stroke();
+ctx2.strokeStyle="rgba(0,0,0,.35)";ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(ax,ay);ctx2.lineTo(bx,by);ctx2.stroke();
+const mx=(ax+bx)/2,my=(ay+by)/2;const L=Math.hypot(e.x2-e.x1,e.y2-e.y1);
+ctx2.fillStyle="#0e1115";const t=L.toFixed(2)+" m";ctx2.font="bold 10px sans-serif";const tw=ctx2.measureText(t).width;
+ctx2.fillStyle="rgba(20,23,28,.85)";ctx2.fillRect(mx-tw/2-4,my-18,tw+8,15);ctx2.fillStyle="#fbbf24";ctx2.fillText(t,mx-tw/2,my-6);}
+function drawDim(d){const ax=M2WX(d.x1),ay=M2WY(d.y1),bx=M2WX(d.x2),by=M2WY(d.y2);ctx2.strokeStyle="#a78bfa";ctx2.fillStyle="#a78bfa";ctx2.lineWidth=1.2;
+ctx2.beginPath();ctx2.moveTo(ax,ay);ctx2.lineTo(bx,by);ctx2.stroke();
+for(const[px,py]of[[ax,ay],[bx,by]]){ctx2.beginPath();ctx2.arc(px,py,3,0,7);ctx2.fill();}
+const L=Math.hypot(d.x2-d.x1,d.y2-d.y1).toFixed(2)+" m";ctx2.font="bold 11px sans-serif";ctx2.fillText(L,(ax+bx)/2+6,(ay+by)/2-6);}
+function bbox(e){if(!e)return null;
+if(e.x1!==undefined)return{x0:Math.min(e.x1,e.x2),y0:Math.min(e.y1,e.y2),x1:Math.max(e.x1,e.x2),y1:Math.max(e.y1,e.y2)};
+if(e.w!==undefined)return{x0:e.x,y0:e.y,x1:e.x+e.w,y1:e.y+(e.h||0)};
+return{x0:e.x-.2,y0:e.y-.2,x1:e.x+.2,y1:e.y+.2};}
+/* ===== Rendu 3D isométrique (pur canvas, sans dépendance) ===== */
+function project3(x,y,z){const{a,p,s}=cam3;const xr=(x-cam3.tx)*Math.cos(a)-(y-cam3.ty)*Math.sin(a);const yr=(x-cam3.tx)*Math.sin(a)+(y-cam3.ty)*Math.cos(a);
+return{X:c3d.clientWidth/2+xr*s,Y:c3d.clientHeight/2+yr*Math.sin(p)*s-z*Math.cos(p)*s*1.2,depth:yr};}
+function box3(x0,y0,x1,y1,z0,z1,color,edge){const c=[[.5,.5],[.5,-.5],[-.5,-.5],[-.5,.5]];const cx=(x0+x1)/2,cy=(y0+y1)/2,hx=(x1-x0)/2,hy=(y1-y0)/2;
+const base=[[cx+hx,cy+hy],[cx+hx,cy-hy],[cx-hx,cy-hy],[cx-hx,cy+hy]];
+const P=base.map(([x,y])=>project3(x,y,z0)),Q=base.map(([x,y])=>project3(x,y,z1));
+return{pts:[...P,...Q],color,depth:(P[0].depth+P[1].depth+P[2].depth+P[3].depth)/4+z0*.1};}
+function obox(x1,y1,x2,y2,wdt,z0,z1,color){const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1e-6,nx=-dy/L*wdt/2,ny=dx/L*wdt/2;
+const b=[[x1+nx,y1+ny],[x2+nx,y2+ny],[x2-nx,y2-ny],[x1-nx,y1-ny]];
+const P=b.map(([x,y])=>project3(x,y,z0)),Q=b.map(([x,y])=>project3(x,y,z1));
+return{pts:[...P,...Q],color,depth:(P[0].depth+P[1].depth+P[2].depth+P[3].depth)/4+z0*.05};}
+function draw3(){const{r}=fitCanvas(c3d);const W=r.width,Ht=r.height;ctx3.clearRect(0,0,W,Ht);
+const g=ctx3.createLinearGradient(0,0,0,Ht);g.addColorStop(0,"#0b1220");g.addColorStop(1,"#14171c");ctx3.fillStyle=g;ctx3.fillRect(0,0,W,Ht);
+ctx3.strokeStyle="rgba(255,255,255,.06)";for(let i=0;i<20;i++){const y=Ht-40-i*8;ctx3.beginPath();ctx3.moveTo(0,y);ctx3.lineTo(W,y);ctx3.stroke();}
+let boxes=[];
+for(const e of els){const M=MATS[e.mat]||MATS.epicea;const selB=sel&&sel.id===e.id;const col=selB?"#f59e0b":M.c;
+if(e.type==='wall')boxes.push(obox(e.x1,e.y1,e.x2,e.y2,e.th,0,e.h,col));
+else if(e.type==='beam')boxes.push(obox(e.x1,e.y1,e.x2,e.y2,e.b,e.z,e.z+e.h,col));
+else if(e.type==='rafter'){const L=Math.hypot(e.x2-e.x1,e.y2-e.y1);const slope=(3.0-e.z)/Math.max(.5,L/2);const zA=e.z,zB=e.z+Math.max(.4,L/2*slope*.5);boxes.push(obox(e.x1,e.y1,(e.x1+e.x2)/2,(e.y1+e.y2)/2,e.b,zA,zA+e.h,col));}
+else if(e.type==='post')boxes.push(box3(e.x-e.s/2,e.y-e.s/2,e.x+e.s/2,e.y+e.s/2,0,e.h,col));
+else if(e.type==='slab')boxes.push(box3(e.x,e.y,e.x+e.w,e.y+e.h,e.h0,e.h0+e.th,col));
+else if(e.type==='stair'){const st=Math.max(e.w,e.h);for(let i=0;i<e.steps;i++){const f=i/e.steps;const zz=f*e.htot;boxes.push(box3(e.x,e.y+e.h*f/e.steps,e.x+e.w,e.y+e.h*(f+1/e.steps),0,zz+.12,"#38bdf8"));}}
+else if(e.type==='opening'){/* openings shown as green frames in plan only */}}
+boxes.sort((a,b)=>a.depth-b.depth);
+if(style3d==='wire'){for(const b of boxes)drawWire(b);}else{for(const b of boxes)drawBox(b);}
+ctx3.fillStyle="rgba(232,237,242,.8)";ctx3.font="12px sans-serif";
+ctx3.fillText(style3d==='wire'?"✏ 3D — style CAO filaire — glisser = orbite · molette = zoom":"⬢ 3D / Monde virtuel — glisser = orbite · molette = zoom · faces triées peintre",10,18);
+ctx3.fillStyle="#5b6a7c";ctx3.fillText("Rendu logiciel intégré (sans GPU) — maquette d'avant-projet",10,Ht-10);}
+function drawBox(b){const P=b.pts;const faces=[[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7]];
+const shade=[.72,.85,.6,.78,1.0];
+faces.forEach((f,i)=>{ctx3.beginPath();ctx3.moveTo(P[f[0]].X,P[f[0]].Y);for(let k=1;k<f.length;k++)ctx3.lineTo(P[f[k]].X,P[f[k]].Y);ctx3.closePath();
+ctx3.fillStyle=shadeColor(b.color,shade[i]);ctx3.fill();ctx3.strokeStyle="rgba(0,0,0,.4)";ctx3.lineWidth=1;ctx3.stroke();});}
+function shadeColor(hex,f){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;r=Math.min(255,Math.round(r*f));g=Math.min(255,Math.round(g*f));b=Math.min(255,Math.round(b*f));return`rgb(${r},${g},${b})`;}
+function drawWire(b){const P=b.pts;const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+ctx3.strokeStyle=b.color==="#f59e0b"?"#f59e0b":"rgba(232,237,242,.85)";ctx3.lineWidth=1.2;ctx3.beginPath();
+for(const[a,c]of edges){ctx3.moveTo(P[a].X,P[a].Y);ctx3.lineTo(P[c].X,P[c].Y);}ctx3.stroke();
+ctx3.fillStyle="rgba(232,237,242,.9)";for(let i=0;i<8;i++){ctx3.fillRect(P[i].X-1.2,P[i].Y-1.2,2.4,2.4);}}
+function caoThemeColors(t){if(t==='blue')return{bg:"#123a63",grid:"rgba(255,255,255,.14)",ax:"#7dd3fc",ink:"#ffffff",mut:"rgba(255,255,255,.65)",dim:"#fde68a",hatch:"rgba(255,255,255,.5)",frame:"#ffffff"};
+if(t==='dark')return{bg:"#0b0e12",grid:"#1e2530",ax:"#38bdf8",ink:"#e8edf2",mut:"#9aa6b2",dim:"#f59e0b",hatch:"rgba(232,237,242,.5)",frame:"#e8edf2"};
+return{bg:"#fdfdfc",grid:"#e3e6e1",ax:"#5a8a3a",ink:"#22251f",mut:"#7a8272",dim:"#7a5a1a",hatch:"#6a7263",frame:"#22251f"};}
+/* ===== Atelier CAO façon SEMA : épure « elevation rive biaise » ===== */
+let caoTool='select', caoEnts=[], caoSel=null, caoUid=1, selEpure=true, semaDirty=true, caoFitted=false;
+let camC={ox:1.2, oz:1.9, k:50};
+let caoStyle={contour:'#1a1a1a', remplissage:'Généré', motif:'Plein', hachure:'ISO U', taille:'zoom', facteur:100, angle:'automat.', chachure:'CONTOUR', transparent:true, fond:'#ffffff'};
+let epureStyle={contour:'#1a1a1a', remplissage:'Généré', motif:'Plein', hachure:'ISO U', taille:'zoom', facteur:100, angle:'automat.', chachure:'CONTOUR', transparent:false, fond:'#b9e6a8'};
+const fr=(n,d=2)=>Number(n).toFixed(d).replace('.',',');
+function epure(){
+let L=6,W=4,H=2.5,P=parseFloat((document.getElementById('inP')||{}).value)||30;
+const sl=els.find(e=>e.type==='slab'); if(sl){L=sl.w;W=sl.h;}
+const wl=els.find(e=>e.type==='wall'); if(wl&&wl.h)H=wl.h;
+const a=P*Math.PI/180, run=W/2, rise=Math.tan(a)*run, len=Math.hypot(run,rise);
+const ux=run/(len||1), uy=rise/(len||1), nx=-uy, ny=ux, w=0.20, bias=0.35;
+const E={u:0,v:H}, R={u:run,v:H+rise};
+const A1={u:E.u+nx*w/2+ux*bias, v:E.v+ny*w/2+uy*bias}, A2={u:E.u-nx*w/2, v:E.v-ny*w/2};
+const B1={u:R.u+nx*w/2, v:R.v+ny*w/2}, B2={u:R.u-nx*w/2, v:R.v-ny*w/2};
+return{L,W,H,P,a,run,rise,len,ux,uy,nx,ny,w,E,R,A1,A2,B1,B2,poly:[A2,B2,B1,A1],
+frame:{p1:run+0.9,p2:run+2.3,pw:0.14,pan0:run+0.7,pan1:run+2.5,ph:0.24}};}
+function fitCamC(){const{r}=fitCanvas(ccao);const Wpx=r.width-232,Hpx=r.height-120;const ep=epure();
+const u0=-2.2,u1=ep.frame.pan1+1.2,v0=-1.0,v1=ep.R.v+1.2;
+camC.k=Math.max(8,Math.min(170,Math.min(Wpx/(u1-u0),Hpx/(v1-v0))));
+camC.ox=(u0+u1)/2; camC.oz=(v0+v1)/2; caoFitted=true;}
+function drawCAO(){const{r}=fitCanvas(ccao);const W=r.width,Ht=r.height;const o=caoOpts(),C=caoThemeColors(o.theme);
+if(!caoFitted)fitCamC();
+const k=camC.k, SU=u=>(u-camC.ox)*k+(W-212)/2, SV=v=>Ht/2-46-(v-camC.oz)*k;
+ctxC.fillStyle=C.bg;ctxC.fillRect(0,0,W,Ht);
+// grille légère
+const gs=0.5, u0=camC.ox-(W-212)/2/k, u1=camC.ox+(W-212)/2/k, v0=camC.oz-(Ht/2)/k, v1=camC.oz+(Ht/2)/k;
+ctxC.strokeStyle=C.grid;ctxC.lineWidth=1;ctxC.beginPath();
+for(let gu=Math.ceil(u0/gs)*gs;gu<u1;gu+=gs){ctxC.moveTo(SU(gu),0);ctxC.lineTo(SU(gu),Ht-56);}
+for(let gv=Math.ceil(v0/gs)*gs;gv<v1;gv+=gs){ctxC.moveTo(0,SV(gv));ctxC.lineTo(W-212,SV(gv));}
+ctxC.stroke();
+const ep=epure(), faint=o.theme==='white'?'#c2c7c2':'rgba(150,155,150,.55)';
+// --- fond de plan : modèle en élévation X-Z, gris léger ---
+ctxC.lineWidth=1;
+for(const e of els){ctxC.strokeStyle=faint;ctxC.fillStyle=faint;
+if(e.type==='wall'){const xa=Math.min(e.x1,e.x2),xb=Math.max(e.x1,e.x2);
+if(Math.abs(e.y2-e.y1)<0.01||Math.abs(e.x2-e.x1)<0.01&&false){}
+if(Math.abs(e.x2-e.x1)>0.05&&Math.abs(e.y2-e.y1)<0.05){ctxC.strokeRect(SU(xa),SV(e.h), (xb-xa)*k, e.h*k);}
+else if(Math.abs(e.y2-e.y1)>0.05&&Math.abs(e.x2-e.x1)<0.05){ctxC.beginPath();ctxC.moveTo(SU(e.x1),SV(0));ctxC.lineTo(SU(e.x1),SV(e.h));ctxC.stroke();}}
+else if(e.type==='post'){ctxC.beginPath();ctxC.moveTo(SU(e.x),SV(0));ctxC.lineTo(SU(e.x),SV(e.h));ctxC.stroke();}
+else if(e.type==='beam'){ctxC.beginPath();ctxC.moveTo(SU(Math.min(e.x1,e.x2)),SV(e.z));ctxC.lineTo(SU(Math.max(e.x1,e.x2)),SV(e.z));ctxC.stroke();}
+else if(e.type==='slab'){ctxC.setLineDash([5,4]);ctxC.beginPath();ctxC.moveTo(SU(e.x),SV(e.h0));ctxC.lineTo(SU(e.x+e.w),SV(e.h0));ctxC.stroke();ctxC.setLineDash([]);}
+else if(e.type==='opening'){ctxC.strokeStyle='#7fbf7f';ctxC.strokeRect(SU(e.x),SV(e.oh),e.w*k,e.oh*k);ctxC.strokeStyle=faint;}}
+// --- épure rive biaise ---
+const{E,R,A1,A2,B1,B2}=ep;
+// axe long (mixte) prolongé
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=1;ctxC.setLineDash([14,5,2,5]);
+ctxC.beginPath();ctxC.moveTo(SU(E.u-ep.ux*ep.len*0.55),SV(E.v-ep.uy*ep.len*0.55));ctxC.lineTo(SU(R.u+ep.ux*ep.len*0.4),SV(R.v+ep.uy*ep.len*0.4));ctxC.stroke();ctxC.setLineDash([]);
+// lignes de rappel en pointillés
+ctxC.strokeStyle='#8a8f8a';ctxC.setLineDash([4,4]);ctxC.lineWidth=1;ctxC.beginPath();
+ctxC.moveTo(SU(A2.u),SV(A2.v));ctxC.lineTo(SU(A2.u),SV(0)); // aplomb égout
+ctxC.moveTo(SU(E.u-1.6),SV(E.v));ctxC.lineTo(SU(E.u),SV(E.v)); // débord
+ctxC.moveTo(SU(B2.u),SV(B2.v));ctxC.lineTo(SU(B2.u+1.6),SV(B2.v)); // niveau faîtage
+ctxC.moveTo(SU(R.u),SV(R.v));ctxC.lineTo(SU(R.u),SV(ep.H)); // retombée faîtage
+ctxC.moveTo(SU(A2.u-1.2),SV(0));ctxC.lineTo(SU(ep.frame.pan1+1.0),SV(0)); // baseline
+ctxC.stroke();ctxC.setLineDash([]);
+// arcs guides (compas)
+ctxC.strokeStyle='#9aa09a';ctxC.setLineDash([6,4]);ctxC.beginPath();
+const ang=Math.atan2(-(R.v-E.v)*k,(R.u-E.u)*k);
+ctxC.arc(SU(E.u),SV(E.v),ep.len*k*0.98,ang-0.95,ang+0.28);
+ctxC.moveTo(SU(R.u)+ep.len*k*0.5,SV(R.v));ctxC.arc(SU(R.u),SV(R.v),ep.len*k*0.5,ang-1.1,ang+0.5);
+ctxC.moveTo(SU(A2.u)+0.45*k,SV(A2.v));ctxC.arc(SU(A2.u),SV(A2.v),0.45*k,0,Math.PI*2);
+ctxC.stroke();ctxC.setLineDash([]);
+// fermette / cadre de droite
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=1.2;
+for(const px of[ep.frame.p1,ep.frame.p2])ctxC.strokeRect(SU(px-ep.frame.pw/2),SV(ep.H),ep.frame.pw*k,ep.H*k);
+ctxC.strokeRect(SU(ep.frame.pan0),SV(ep.H+ep.frame.ph),(ep.frame.pan1-ep.frame.pan0)*k,ep.frame.ph*k);
+// pièce maîtresse : chevron de rive (vert si sélectionné comme sur SEMA)
+paintPoly([A2,B2,B1,A1].map(p=>({x:SU(p.u),y:SV(p.v)})), selEpure?epureStyle:{...epureStyle,transparent:true,fond:'#ffffff'}, SU, SV);
+// coupes d'extrémité épaisses
+ctxC.strokeStyle='#111';ctxC.lineWidth=2.6;ctxC.beginPath();
+ctxC.moveTo(SU(A1.u),SV(A1.v));ctxC.lineTo(SU(A2.u),SV(A2.v));
+ctxC.moveTo(SU(B1.u),SV(B1.v));ctxC.lineTo(SU(B2.u),SV(B2.v));ctxC.stroke();
+// étiquette le long du fil
+ctxC.save();const mx=(SU(A2.u)+SU(B1.u))/2,my=(SV(A2.v)+SV(B1.v))/2;
+ctxC.translate(mx,my);ctxC.rotate(-Math.atan2(SV(B1.v)-SV(A2.v),SU(B1.u)-SU(A2.u)));
+ctxC.fillStyle=C.ink;ctxC.font='11px sans-serif';
+ctxC.fillText(`chevron rive · 200×80 · L=${fr(ep.len)} m`,8,-8);ctxC.restore();
+ctxC.fillStyle=C.dim||'#7a5a2a';ctxC.font='bold 11px sans-serif';
+ctxC.fillText(`${fr(ep.P,1)}°`,SU(E.u)-52,SV(E.v)+16);
+caoDimC(SU(E.u),SV(0),SU(R.u),SV(0),C,`Portée ${fr(ep.run)}`);
+// annotations utilisateur
+for(const t of caoEnts)drawEnt(t,C,selCao&&t.id===selCao.id);
+if(caoDraft)drawEnt(caoDraft,C,true);
+// panneaux SEMA
+if(semaDirty){renderDon();refreshFrom();semaDirty=false;}}
+function caoDimC(ax,ay,bx,by,C,label){ctxC.strokeStyle=C.ink;ctxC.fillStyle=C.ink;ctxC.lineWidth=1;
+ctxC.beginPath();ctxC.moveTo(ax,ay);ctxC.lineTo(bx,by);ctxC.stroke();
+for(const[px,py,a]of[[ax,ay,Math.atan2(by-ay,bx-ax)],[bx,by,Math.atan2(by-ay,bx-ax)]]){ctxC.save();ctxC.translate(px,py);ctxC.rotate(a);ctxC.beginPath();ctxC.moveTo(0,0);ctxC.lineTo(2,-7);ctxC.lineTo(2,7);ctxC.closePath();ctxC.stroke();ctxC.restore();}
+if(label){ctxC.font='11px sans-serif';const tw=ctxC.measureText(label).width;ctxC.fillText(label,(ax+bx)/2-tw/2,(ay+by)/2-6);}}
+function hatchBox(x,y,w,h,kind,color,fact){ctxC.save();ctxC.beginPath();ctxC.rect(x,y,w,h);ctxC.clip();
+const gap=Math.max(4,7*(fact||100)/100);ctxC.strokeStyle=color;ctxC.fillStyle=color;ctxC.lineWidth=1;ctxC.beginPath();
+if(kind==='Hachuré'||kind==='hachure'){for(let d=-h;d<w+h;d+=gap){ctxC.moveTo(x+d,y);ctxC.lineTo(x+d+h,y+h);}}
+else if(kind==='Croisé'||kind==='croise'){for(let d=-h;d<w+h;d+=gap){ctxC.moveTo(x+d,y);ctxC.lineTo(x+d+h,y+h);ctxC.moveTo(x+d+h,y);ctxC.lineTo(x+d,y+h);}}
+else if(kind==='Lamellé'||kind==='lamelle'){for(let yy=y;yy<y+h;yy+=gap){ctxC.moveTo(x,yy);ctxC.lineTo(x+w,yy);}}
+else if(kind==='Pointillé'||kind==='pointille'){for(let yy=y+3;yy<y+h;yy+=gap)for(let xx=x+3;xx<x+w;xx+=gap){ctxC.moveTo(xx+1,yy);ctxC.arc(xx,yy,1,0,7);}}
+ctxC.stroke();ctxC.restore();}
+function paintPoly(pts,st){ctxC.save();ctxC.beginPath();ctxC.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctxC.lineTo(pts[i].x,pts[i].y);ctxC.closePath();
+const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),bx={x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)};
+if(!st.transparent){if(st.motif==='Plein'){ctxC.fillStyle=st.fond;ctxC.globalAlpha=.92;ctxC.fill();ctxC.globalAlpha=1;}
+else{ctxC.fillStyle=st.fond;ctxC.globalAlpha=.35;ctxC.fill();ctxC.globalAlpha=1;hatchBox(bx.x,bx.y,bx.w,bx.h,st.motif,st.chachure==='CONTOUR'?st.contour:'#555',st.facteur);}}
+ctxC.strokeStyle=st.contour;ctxC.lineWidth=1.4;ctxC.stroke();ctxC.restore();}
+function drawEnt(t,C,isSel){const{r}= {r:null};const k=camC.k,W=ccao.clientWidth,Ht=ccao.clientHeight;
+const SU=u=>(u-camC.ox)*k+(W-212)/2, SV=v=>Ht/2-46-(v-camC.oz)*k;
+const st=t.st||caoStyle;
+ctxC.save();
+if(t.kind==='line'||t.kind==='arrow'){ctxC.strokeStyle=isSel?'#1a7a1a':st.contour;ctxC.lineWidth=isSel?2.4:1.5;
+ctxC.beginPath();ctxC.moveTo(SU(t.u1),SV(t.v1));ctxC.lineTo(SU(t.u2),SV(t.v2));ctxC.stroke();
+if(t.kind==='arrow'){const a=Math.atan2(SV(t.v2)-SV(t.v1),SU(t.u2)-SU(t.u1));ctxC.save();ctxC.translate(SU(t.u2),SV(t.v2));ctxC.rotate(a);ctxC.fillStyle=isSel?'#1a7a1a':st.contour;ctxC.beginPath();ctxC.moveTo(0,0);ctxC.lineTo(-11,-4);ctxC.lineTo(-11,4);ctxC.closePath();ctxC.fill();ctxC.restore();}}
+else if(t.kind==='rect'){paintPoly([{x:SU(t.u),y:SV(t.v)},{x:SU(t.u+t.w),y:SV(t.v)},{x:SU(t.u+t.w),y:SV(t.v+t.h)},{x:SU(t.u),y:SV(t.v+t.h)}],isSel?{...st,transparent:false,fond:'#c9efc0'}:st);}
+else if(t.kind==='circle'){ctxC.beginPath();ctxC.arc(SU(t.u),SV(t.v),t.r*k,0,Math.PI*2);
+if(!st.transparent){ctxC.fillStyle=st.fond;ctxC.globalAlpha=.5;ctxC.fill();ctxC.globalAlpha=1;}
+ctxC.strokeStyle=isSel?'#1a7a1a':st.contour;ctxC.lineWidth=isSel?2.4:1.5;ctxC.stroke();}
+else if(t.kind==='point'){ctxC.strokeStyle=isSel?'#1a7a1a':st.contour;ctxC.lineWidth=1.6;const x=SU(t.u),y=SV(t.v);
+ctxC.beginPath();ctxC.moveTo(x-7,y);ctxC.lineTo(x+7,y);ctxC.moveTo(x,y-7);ctxC.lineTo(x,y+7);ctxC.stroke();ctxC.fillStyle=st.contour;ctxC.beginPath();ctxC.arc(x,y,2,0,7);ctxC.fill();}
+else if(t.kind==='text'){ctxC.fillStyle=isSel?'#1a7a1a':st.contour;ctxC.font='13px sans-serif';ctxC.fillText(t.str,SU(t.u),SV(t.v));
+if(isSel){const w=ctxC.measureText(t.str).width;ctxC.setLineDash([4,3]);ctxC.strokeStyle='#1a7a1a';ctxC.strokeRect(SU(t.u)-3,SV(t.v)-15,w+6,19);ctxC.setLineDash([]);}}
+ctxC.restore();}
+function entLen(t){return Math.hypot((t.u2??t.u)-(t.u1??t.u),(t.v2??t.v)-(t.v1??t.v));}
+function entAng(t){return Math.atan2((t.v2??0)-(t.v1??0),(t.u2??0)-(t.u1??0))*180/Math.PI;}
+/* ANCIEN-RENDU-CAO-NE-PAS-EXECUTER-DEBUT
+function drawCAO(){const{r}=fitCanvas(ccao);const W=r.width,Ht=r.height;const o=caoOpts(),C=caoThemeColors(o.theme);
+ctxC.fillStyle=C.bg;ctxC.fillRect(0,0,W,Ht);
+const s=cam.s, X=x=>(x-cam.x)*s+W/2, Y=y=>(y-cam.y)*s+Ht/2;
+// grille fine
+ctxC.lineWidth=1;const gs=parseFloat(document.getElementById('gridStep').value)||.5;
+const x0=cam.x-W/s/2,x1=cam.x+W/s/2,y0=cam.y-Ht/s/2,y1=cam.y+Ht/s/2;
+ctxC.strokeStyle=C.grid;ctxC.beginPath();
+for(let gx=Math.ceil(x0/gs)*gs;gx<x1;gx+=gs){ctxC.moveTo(X(gx),0);ctxC.lineTo(X(gx),Ht);}
+for(let gy=Math.ceil(y0/gs)*gs;gy<y1;gy+=gs){ctxC.moveTo(0,Y(gy));ctxC.lineTo(W,Y(gy));}
+ctxC.stroke();
+// axes
+ctxC.strokeStyle=C.ax;ctxC.setLineDash([12,6,2,6]);ctxC.lineWidth=1.2;
+ctxC.beginPath();ctxC.moveTo(0,Y(0));ctxC.lineTo(W,Y(0));ctxC.moveTo(X(0),0);ctxC.lineTo(X(0),Ht);ctxC.stroke();ctxC.setLineDash([]);
+// contour dalle / plancher : trait fin
+for(const e of els){if(e.type!=='slab')continue;ctxC.strokeStyle=C.ink;ctxC.lineWidth=1;
+ctxC.strokeRect(X(e.x),Y(e.y),e.w*s,e.h*s);
+if(o.hatch){ctxC.save();ctxC.beginPath();ctxC.rect(X(e.x),Y(e.y),e.w*s,e.h*s);ctxC.clip();ctxC.strokeStyle=C.hatch;ctxC.lineWidth=.7;ctxC.beginPath();
+for(let d=-e.h*s;d<e.w*s+e.h*s;d+=7){ctxC.moveTo(X(e.x)+d,Y(e.y));ctxC.lineTo(X(e.x)+d+e.h*s,Y(e.y)+e.h*s);}ctxC.stroke();ctxC.restore();}}
+// murs : double trait + hachure médiane
+for(const e of els){if(e.type!=='wall')continue;
+const dx=e.x2-e.x1,dy=e.y2-e.y1,L=Math.hypot(dx,dy)||1e-6,nx=-dy/L*e.th/2,ny=dx/L*e.th/2;
+const ax=X(e.x1+nx),ay=Y(e.y1+ny),bx=X(e.x2+nx),by=Y(e.y2+ny),cx=X(e.x1-nx),cy=Y(e.y1-ny),dx2=X(e.x2-nx),dy2=Y(e.y2-ny);
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=1.8;ctxC.beginPath();ctxC.moveTo(ax,ay);ctxC.lineTo(bx,by);ctxC.moveTo(cx,cy);ctxC.lineTo(dx2,dy2);ctxC.stroke();
+if(o.hatch){ctxC.strokeStyle=C.hatch;ctxC.lineWidth=.7;ctxC.beginPath();
+const steps=Math.floor(L/.15);for(let i=0;i<=steps;i++){const f=i/Math.max(1,steps);const px=e.x1+dx*f,py=e.y1+dy*f;
+ctxC.moveTo(X(px+nx),Y(py+ny));ctxC.lineTo(X(px-nx),Y(py-ny));}ctxC.stroke();}
+if(o.labels){const mx=(X(e.x1)+X(e.x2))/2,my=(Y(e.y1)+Y(e.y2))/2;ctxC.fillStyle=C.dim;ctxC.font="bold 11px sans-serif";
+ctxC.fillText(`${(e.label||'Paroi')} · ép ${(e.th*1000).toFixed(0)} · H ${e.h.toFixed(2)}m`,mx+6,my-6);}}
+// poutres / chevrons : trait fort + axe
+for(const e of els){if(e.type!=='beam'&&e.type!=='rafter')continue;
+ctxC.strokeStyle=e.type==='beam'?C.ink:C.ax;ctxC.lineWidth=e.type==='beam'?3:2;
+ctxC.beginPath();ctxC.moveTo(X(e.x1),Y(e.y1));ctxC.lineTo(X(e.x2),Y(e.y2));ctxC.stroke();
+ctxC.fillStyle=C.mut;ctxC.font="10px sans-serif";
+ctxC.fillText(`${e.label||e.type} ${secOf(e)} L=${Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)}`,(X(e.x1)+X(e.x2))/2+5,(Y(e.y1)+Y(e.y2))/2-5);}
+// poteaux : carré + croix
+for(const e of els){if(e.type!=='post')continue;const px=X(e.x)-e.s*s/2,py=Y(e.y)-e.s*s/2;
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=1.6;ctxC.strokeRect(px,py,Math.max(5,e.s*s),Math.max(5,e.s*s));
+ctxC.beginPath();ctxC.moveTo(px,py);ctxC.lineTo(px+Math.max(5,e.s*s),py+Math.max(5,e.s*s));ctxC.moveTo(px+Math.max(5,e.s*s),py);ctxC.lineTo(px,py+Math.max(5,e.s*s));ctxC.stroke();
+if(o.labels){ctxC.fillStyle=C.mut;ctxC.font="10px sans-serif";ctxC.fillText(`${Math.round(e.s*1000)}×${Math.round(e.s*1000)} H${e.h.toFixed(1)}`,px-4,py-5);}}
+// escaliers : marches + flèche
+for(const e of els){if(e.type!=='stair')continue;const px=X(e.x),py=Y(e.y),w=e.w*s,h=e.h*s;
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=1.6;ctxC.strokeRect(px,py,w,h);ctxC.lineWidth=.8;
+for(let i=1;i<e.steps;i++){const yy=py+h*i/e.steps;ctxC.beginPath();ctxC.moveTo(px,yy);ctxC.lineTo(px+w,yy);ctxC.stroke();}
+ctxC.strokeStyle=C.dim;ctxC.lineWidth=2;ctxC.beginPath();ctxC.moveTo(px+w/2,py+h-6);ctxC.lineTo(px+w/2,py+8);ctxC.stroke();
+ctxC.fillStyle=C.dim;ctxC.font="bold 11px sans-serif";ctxC.fillText(`ESC ${e.steps} marches`,px+4,py+14);}
+// ouvertures : vert + symbole
+for(const e of els){if(e.type!=='opening')continue;ctxC.strokeStyle="#16a34a";ctxC.lineWidth=3;
+ctxC.beginPath();ctxC.moveTo(X(e.x),Y(e.y));ctxC.lineTo(X(e.x)+e.w*s,Y(e.y));ctxC.stroke();
+ctxC.fillStyle="#16a34a";ctxC.font="bold 11px sans-serif";ctxC.fillText(`${e.ot} ${e.w.toFixed(2)}×${e.oh.toFixed(2)}`,X(e.x),Y(e.y)-7);}
+// cotes manuelles
+for(const d of dims)caoDim(d.x1,d.y1,d.x2,d.y2,C);
+// cotations auto : emprise + entraxes poteaux
+if(o.dims&&els.length){let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;for(const e of els){const b=bbox(e);bx0=Math.min(bx0,b.x0);by0=Math.min(by0,b.y0);bx1=Math.max(bx1,b.x1);by1=Math.max(by1,b.y1);}
+caoDim(bx0,by0-0.6,bx1,by0-0.6,C);caoDim(bx1+0.6,by0,bx1+0.6,by1,C);
+const posts=els.filter(e=>e.type==='post').map(e=>e.x).sort((a,b)=>a-b);
+for(let i=1;i<posts.length;i++){if(posts[i]-posts[i-1]>0.05)caoDim(posts[i-1],by1+0.35,posts[i],by1+0.35,C,true);}}
+// sélection
+if(sel){const b=bbox(sel);if(b){ctxC.strokeStyle="#ef4444";ctxC.setLineDash([6,4]);ctxC.lineWidth=1.6;ctxC.strokeRect(X(b.x0)-6,Y(b.y0)-6,(b.x1-b.x0)*s+12,(b.y1-b.y0)*s+12);ctxC.setLineDash([]);}}
+// nord + échelle graphique
+ctxC.fillStyle=C.ink;ctxC.font="bold 13px sans-serif";ctxC.fillText("N ↑",W-44,30);
+ctxC.strokeStyle=C.ink;ctxC.lineWidth=2;ctxC.beginPath();ctxC.moveTo(W-120,Ht-34);ctxC.lineTo(W-120+s,Ht-34);ctxC.stroke();
+ctxC.font="11px sans-serif";ctxC.fillText("1 m",W-118,Ht-40);
+// cadre + cartouche
+ctxC.strokeStyle=C.frame;ctxC.lineWidth=2;ctxC.strokeRect(8,8,W-16,Ht-16);
+if(o.cart){const cw=300,ch=64;ctxC.fillStyle=C.bg;ctxC.fillRect(W-cw-16,Ht-ch-16,cw,ch);ctxC.strokeStyle=C.frame;ctxC.lineWidth=1.4;ctxC.strokeRect(W-cw-16,Ht-ch-16,cw,ch);
+ctxC.fillStyle=C.ink;ctxC.font="bold 12px sans-serif";const t=totals();
+ctxC.fillText("TimberCAO — Plan CAO 1:50",W-cw-6,Ht-ch+6);
+ctxC.font="11px sans-serif";ctxC.fillText(`${els.length} pièces · ${t.v.toFixed(2)} m³ · ${Math.round(t.p)} € HT`,W-cw-6,Ht-ch+24);
+ctxC.fillStyle=C.mut;ctxC.fillText(`Projet bois · ${new Date().toLocaleDateString('fr-FR')} · éch. auto`,W-cw-6,Ht-ch+42);}
+ctxC.fillStyle=C.mut;ctxC.font="11px sans-serif";ctxC.fillText("✏ Mode CAO — fond clair imprimable · mêmes données que le plan · molette = zoom",14,26);}
+function caoDim(x1,y1,x2,y2,C,small){const s=cam.s,W=ccao.clientWidth,Ht=ccao.clientHeight;
+const ax=(x1-cam.x)*s+W/2,ay=(y1-cam.y)*s+Ht/2,bx=(x2-cam.x)*s+W/2,by=(y2-cam.y)*s+Ht/2;
+ctxC.strokeStyle=C.dim;ctxC.fillStyle=C.dim;ctxC.lineWidth=1.1;
+ctxC.beginPath();ctxC.moveTo(ax,ay);ctxC.lineTo(bx,by);ctxC.stroke();
+for(const[px,py,ang]of[[ax,ay,Math.atan2(by-ay,bx-ax)],[bx,by,Math.atan2(by-ay,bx-ax)]]){ctxC.save();ctxC.translate(px,py);ctxC.rotate(ang);ctxC.beginPath();ctxC.moveTo(0,0);ctxC.lineTo(7,-3);ctxC.lineTo(7,3);ctxC.closePath();ctxC.fill();ctxC.restore();}
+const L=Math.hypot(x2-x1,y2-y1).toFixed(2);ctxC.font=(small?"10px":"bold 11px")+" sans-serif";
+const mx=(ax+bx)/2,my=(ay+by)/2;const tw=ctxC.measureText(L).width;
+ctxC.save();ctxC.translate(mx,my-8);ctxC.fillText(L,-tw/2,0);ctxC.restore();}
+ANCIEN-RENDU-CAO-NE-PAS-EXECUTER-FIN */
+function exportSVG(){const o=caoOpts(),C=caoThemeColors(o.theme);const W=ccao.clientWidth||800,Ht=ccao.clientHeight||600;
+const k=camC.k, X=u=>((u-camC.ox)*k+(W-212)/2).toFixed(1), Y=v=>(Ht/2-46-(v-camC.oz)*k).toFixed(1);
+const ep=epure();
+const poly=ep.poly.map(p=>`${X(p.u)},${Y(p.v)}`).join(' ');
+let h=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${Ht}" viewBox="0 0 ${W} ${Ht}"><rect width="100%" height="100%" fill="${C.bg}"/><g stroke-linecap="round" font-family="sans-serif">`;
+h+=`<line x1="${X(ep.E.u-ep.ux*ep.len*0.55)}" y1="${Y(ep.E.v-ep.uy*ep.len*0.55)}" x2="${X(ep.R.u+ep.ux*ep.len*0.4)}" y2="${Y(ep.R.v+ep.uy*ep.len*0.4)}" stroke="${C.ink}" stroke-width="1" stroke-dasharray="14 5 2 5"/>`;
+h+=`<polygon points="${poly}" fill="${epureStyle.transparent?'none':epureStyle.fond}" stroke="${epureStyle.contour}" stroke-width="1.6"/>`;
+h+=`<text x="${X((ep.A2.u+ep.B1.u)/2)}" y="${Y((ep.A2.v+ep.B1.v)/2)-8}" font-size="11" fill="${C.ink}">chevron rive · L=${fr(ep.len)} m · ${fr(ep.P,1)}°</text>`;
+for(const t of caoEnts){const st=t.st||caoStyle;
+if(t.kind==='line'||t.kind==='arrow')h+=`<line x1="${X(t.u1)}" y1="${Y(t.v1)}" x2="${X(t.u2)}" y2="${Y(t.v2)}" stroke="${st.contour}" stroke-width="1.5"/>`;
+else if(t.kind==='rect')h+=`<rect x="${X(Math.min(t.u,t.u+t.w))}" y="${Y(Math.max(t.v,t.v+t.h))}" width="${(Math.abs(t.w)*k).toFixed(1)}" height="${(Math.abs(t.h)*k).toFixed(1)}" fill="${st.transparent?'none':st.fond}" stroke="${st.contour}" stroke-width="1.4"/>`;
+else if(t.kind==='circle')h+=`<circle cx="${X(t.u)}" cy="${Y(t.v)}" r="${(t.r*k).toFixed(1)}" fill="${st.transparent?'none':st.fond}" stroke="${st.contour}" stroke-width="1.5"/>`;
+else if(t.kind==='text')h+=`<text x="${X(t.u)}" y="${Y(t.v)}" font-size="13" fill="${st.contour}">${t.str.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+else if(t.kind==='point')h+=`<circle cx="${X(t.u)}" cy="${Y(t.v)}" r="2.5" fill="${st.contour}"/>`;}
+h+=`</g></svg>`;
+dl("epure-rive-biaise.svg",h,"image/svg+xml");msg("Épure exportée en SVG (vectoriel, imprimable).");}
+/* ===== Élévation ===== */
+function drawSec(){const{r}=fitCanvas(csec);const W=r.width,Ht=r.height;ctxS.clearRect(0,0,W,Ht);ctxS.fillStyle="#0e1115";ctxS.fillRect(0,0,W,Ht);
+const s=Math.min(W/12,Ht/6);const ox=40,oy=Ht-50;
+ctxS.strokeStyle="#2e3742";ctxS.beginPath();ctxS.moveTo(0,oy);ctxS.lineTo(W,oy);ctxS.stroke();
+ctxS.fillStyle="#5b6a7c";ctxS.font="11px sans-serif";
+for(let x=0;x<=12;x+=1){ctxS.fillText(x+"m",ox+x*s,oy+16);ctxS.strokeStyle="#1e2530";ctxS.beginPath();ctxS.moveTo(ox+x*s,0);ctxS.lineTo(ox+x*s,oy);ctxS.stroke();}
+for(let z=0;z<=6;z+=1){ctxS.fillText(z+"m",6,oy-z*s);ctxS.strokeStyle="#1e2530";ctxS.beginPath();ctxS.moveTo(ox,oy-z*s);ctxS.lineTo(W,oy-z*s);ctxS.stroke();}
+for(const e of els){const M=MATS[e.mat]||MATS.epicea;ctxS.fillStyle=(sel&&sel.id===e.id)?"#f59e0b":M.c;ctxS.strokeStyle="rgba(0,0,0,.4)";
+if(e.type==='wall'){const x0=ox+Math.min(e.x1,e.x2)*s,w=Math.abs(e.x2-e.x1)*s||4;ctxS.fillRect(x0,oy-e.h*s,Math.max(3,w),e.h*s);ctxS.strokeRect(x0,oy-e.h*s,Math.max(3,w),e.h*s);}
+else if(e.type==='post'){ctxS.fillRect(ox+e.x*s-3,oy-e.h*s,6,e.h*s);}
+else if(e.type==='beam'){ctxS.fillRect(ox+Math.min(e.x1,e.x2)*s,oy-(e.z+e.h)*s,Math.max(3,Math.abs(e.x2-e.x1)*s),e.h*s);}
+else if(e.type==='slab'){ctxS.fillStyle="rgba(203,178,122,.8)";ctxS.fillRect(ox+e.x*s,oy-(e.h0+e.th)*s,e.w*s,e.th*s);}
+else if(e.type==='stair'){ctxS.fillStyle="#38bdf8";for(let i=0;i<e.steps;i++){const f=i/e.steps;ctxS.fillRect(ox+(e.x)*s,oy-(f*e.htot+.12)*s,(e.w)*s,.1*s);}}
+else if(e.type==='opening'){ctxS.strokeStyle="#22c55e";ctxS.lineWidth=2;ctxS.strokeRect(ox+e.x*s,oy-(e.oh)*s,e.w*s,e.oh*s);}}
+ctxS.fillStyle="#e8edf2";ctxS.font="12px sans-serif";ctxS.fillText("⧉ Élévation / coupe — projection X–Z (cotes en mètres)",10,18);}
+/* ===== Liste débit ===== */
+function renderList(){const div=document.getElementById('plist');const t=totals();
+let rows=els.map(e=>{const m=metrics(e);return{e,m};}).sort((a,b)=>a.e.type.localeCompare(b.e.type));
+div.innerHTML=`<div style="max-width:900px;margin:0 auto"><h2 style="margin:4px 0">≡ Quantitatif / Liste de débit</h2>
+<p style="color:var(--mut)">Longueurs, volumes, masses et coûts par pièce — base devis & commande machine.</p>
+<div class="kpi" style="margin-bottom:10px"><div><b>${t.v.toFixed(3)} m³</b><span>Volume bois</span></div><div><b>${Math.round(t.m)} kg</b><span>Masse</span></div><div><b>${Math.round(t.p)} €</b><span>Coût HT est.</span></div></div>
+<table><tr><th>Pièce</th><th>Type</th><th>Matériau</th><th>Section / Ép.</th><th>Long. (m)</th><th>Vol. (m³)</th><th>Masse (kg)</th><th>Prix (€)</th></tr>
+${rows.map(({e,m})=>`<tr><td>${e.label||e.type} <span style="color:var(--mut)">${e.id}</span></td><td>${e.type}</td><td>${(MATS[e.mat]||{}).n||e.mat}</td><td>${secOf(e)}</td><td>${m.len.toFixed(2)}</td><td>${m.vol.toFixed(3)}</td><td>${Math.round(m.mass)}</td><td>${Math.round(m.price)}</td></tr>`).join('')}</table>
+<p style="color:var(--mut);font-size:12px">Export CSV = tableur / ERP · Export machine = format BTL simplifié (pièce, longueurs, angles, sections).</p></div>`;
+document.getElementById('qt').innerHTML=`<table><tr><th>Pièce</th><th>Vol.</th><th>€</th></tr>${rows.slice(0,30).map(({e,m})=>`<tr><td>${e.label} ${e.id}</td><td>${m.vol.toFixed(3)}</td><td>${Math.round(m.price)}</td></tr>`).join('')}</table>${rows.length>30?`<p style="color:var(--mut)">+${rows.length-30} autres… voir onglet Quantitatif</p>`:''}`;
+document.getElementById('kVol').textContent=t.v.toFixed(2);document.getElementById('kMas').textContent=Math.round(t.m);document.getElementById('kPri').textContent=Math.round(t.p)+" €";
+document.getElementById('stTot').textContent=`Volume: ${t.v.toFixed(3)} m³ · Poids: ${Math.round(t.m)} kg · Coût: ${Math.round(t.p)} € HT`;
+document.getElementById('stSel').textContent=`${els.length} éléments · ${dims.length} cotes`;}
+function secOf(e){if(e.type==='wall')return`ép ${Math.round(e.th*1000)} mm`;if(e.type==='beam'||e.type==='rafter')return`${Math.round(e.b*1000)}×${Math.round(e.h*1000)}`;if(e.type==='post')return`${Math.round(e.s*1000)}×${Math.round(e.s*1000)}`;if(e.type==='slab')return`ép ${Math.round(e.th*1000)}`;if(e.type==='stair')return`${e.steps} marches`;if(e.type==='opening')return`${e.ot} ${Math.round(e.w*1000)}`;return'–';}
+/* ===== Interactions 2D ===== */
+let draft=null,panning=null;
+function evPos(ev){const r=c2d.getBoundingClientRect();return{x:r.left?ev.clientX-r.left:0,y:ev.clientY-r.top};}
+c2d.addEventListener('contextmenu',e=>e.preventDefault());
+c2d.addEventListener('mousedown',ev=>{const p=evPos(ev);const mx=W2M(p.x),my=H2M(p.y);
+if(ev.button===1||ev.shiftKey||tool==='select'&&ev.button===0&&ev.target&&false){}
+if(ev.button===1||panningKey){panning={sx:p.x,sy:p.y,cx:cam.x,cy:cam.y};return;}
+if(tool==='select'){const hit=pick(mx,my);sel=hit||null;
+if(hit){panning={sx:p.x,sy:p.y,cx:cam.x,cy:cam.y,moving:hit,ox:JSON.stringify(hit)};}else{panning={sx:p.x,sy:p.y,cx:cam.x,cy:cam.y,panOnly:true,maybe:true};}
+renderProps();drawAll();return;}
+const sx=snapV(mx),sy=snapV(my);
+if(tool==='post'){els.push(mk('post',sx,sy,0,0,{mat:'epicea'}));sel=els[els.length-1];refresh();return;}
+draft={tool,x0:sx,y0:sy,x1:sx,y1:sy};});
+let panningKey=false;
+window.addEventListener('keydown',e=>{if(e.code==='Space')panningKey=true;
+if((e.key==='Delete'||e.key==='Backspace')&&document.activeElement.tagName!=='INPUT'){if(caoSel&&view==='cao'){caoEnts=caoEnts.filter(x=>x.id!==caoSel.id);caoSel=null;semaDirty=true;drawAll();}else if(sel){els=els.filter(x=>x.id!==sel.id);sel=null;refresh();}}
+if(sel&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const d=.1;const dx=e.key==='ArrowRight'?d:e.key==='ArrowLeft'?-d:0,dy=e.key==='ArrowDown'?d:e.key==='ArrowUp'?-d:0;moveEl(sel,dx,dy);refresh();}});
+window.addEventListener('keyup',e=>{if(e.code==='Space')panningKey=false;});
+c2d.addEventListener('mousemove',ev=>{const p=evPos(ev);const mx=W2M(p.x),my=H2M(p.y);
+document.getElementById('stPos').textContent=`x: ${mx.toFixed(2)} m  y: ${my.toFixed(2)} m`;
+if(panning&&panning.moving){const dx=(p.x-panning.sx)/cam.s,dy=(p.y-panning.sy)/cam.s;
+if(Math.abs(dx)+Math.abs(dy)>0.001){restoreMove(panning.moving,panning.ox);moveEl(panning.moving,dx,dy);drawAll();renderProps();}return;}
+if(panning&&(panning.panOnly||panningKey||ev.buttons===4||ev.buttons===2)){cam.x=panning.cx-(p.x-panning.sx)/cam.s;cam.y=panning.cy-(p.y-panning.sy)/cam.s;drawAll();return;}
+if(draft){draft.x1=snapV(mx);draft.y1=snapV(my);drawAll();drawDraft();return;}});
+window.addEventListener('mouseup',ev=>{if(panning&&panning.moving){panning=null;refresh();return;}panning=null;
+if(!draft)return;const d=draft;draft=null;
+const w=Math.abs(d.x1-d.x0),h=Math.abs(d.y1-d.y0);
+if(tool==='wall'||tool==='beam'||tool==='rafter'){if(Math.hypot(d.x1-d.x0,d.y1-d.y0)<.2){drawAll();return;}
+const o=tool==='wall'?{th:.14,h:2.5,mat:'epicea',label:'Paroi'}:tool==='beam'?{b:.12,h:.24,z:2.5,mat:'epicea',label:'Poutre'}:{b:.08,h:.18,z:2.5,mat:'epicea',label:'Chevron'};
+els.push(mk(tool,d.x0,d.y0,d.x1,d.y1,o));}
+else if(tool==='slab'){if(w<.2||h<.2){drawAll();return;}els.push(mk('slab',Math.min(d.x0,d.x1),Math.min(d.y0,d.y1),w,h,{th:.2,mat:'clt',label:'Plancher'}));}
+else if(tool==='stair'){if(w<.3||h<.3){drawAll();return;}els.push(mk('stair',Math.min(d.x0,d.x1),Math.min(d.y0,d.y1),w,h,{steps:13,htot:2.3,mat:'chene',label:'Escalier'}));}
+else if(tool==='opening'){if(w<.3){drawAll();return;}els.push(mk('opening',Math.min(d.x0,d.x1),d.y0,w,0,{oh:1.2,ot:'Fenêtre',mat:'epicea',label:'Ouverture'}));}
+else if(tool==='dim'){dims.push({x1:d.x0,y1:d.y0,x2:d.x1,y2:d.y1});}
+sel=els[els.length-1]||sel;refresh();});
+c2d.addEventListener('wheel',ev=>{ev.preventDefault();const f=ev.deltaY<0?1.12:1/1.12;cam.s=Math.min(140,Math.max(6,cam.s*f));document.getElementById('zoom').value=cam.s;drawAll();},{passive:false});
+ccao.addEventListener('wheel',ev=>{ev.preventDefault();const f=ev.deltaY<0?1.12:1/1.12;camC.k=Math.max(8,Math.min(220,camC.k*f));drawAll();},{passive:false});
+let caoPan=null, caoDraft=null;
+const caoUV=ev=>{const r=ccao.getBoundingClientRect(),W=ccao.clientWidth,Ht=ccao.clientHeight;
+return{u:(ev.clientX-r.left-(W-212)/2)/camC.k+camC.ox, v:(Ht/2-46-(ev.clientY-r.top))/camC.k+camC.oz};};
+function pip(poly,p){let ins=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+const xi=poly[i].u,yi=poly[i].v,xj=poly[j].u,yj=poly[j].v;
+if(((yi>p.v)!==(yj>p.v))&&(p.u<(xj-xi)*(p.v-yi)/(yj-yi)+xi))ins=!ins;}return ins;}
+function hitEnt(p){const tol=10/camC.k;let best=null,bd=1e9;
+for(const t of caoEnts){let d=1e9;
+if(t.kind==='line'||t.kind==='arrow')d=distSeg(p.u,p.v,t.u1,t.v1,t.u2,t.v2);
+else if(t.kind==='rect')d=(p.u>=t.u&&p.u<=t.u+t.w&&p.v>=t.v-t.h&&p.v<=t.v)?0:Math.min(Math.abs(p.u-t.u),Math.abs(p.u-t.u-t.w),Math.abs(p.v-t.v),Math.abs(p.v-t.v+t.h));
+else if(t.kind==='circle')d=Math.abs(Math.hypot(p.u-t.u,p.v-t.v)-t.r);
+else if(t.kind==='point')d=Math.hypot(p.u-t.u,p.v-t.v);
+else if(t.kind==='text')d=(p.u>=t.u&&p.u<=t.u+1.2&&p.v>=t.v-0.35&&p.v<=t.v+0.1)?0:1e9;
+if(d<tol&&d<bd){bd=d;best=t;}}return best;}
+ccao.addEventListener('contextmenu',e=>e.preventDefault());
+ccao.addEventListener('mousedown',ev=>{if(view!=='cao')return;const p=caoUV(ev);
+if(ev.button===1){caoPan={x:ev.clientX,y:ev.clientY,ox:camC.ox,oz:camC.oz};return;}
+if(caoTool==='select'){const h=hitEnt(p);caoSel=h;selEpure=!h&&pip(epure().poly,p);
+caoPan={x:ev.clientX,y:ev.clientY,ox:camC.ox,oz:camC.oz,moved:false};semaDirty=true;drawAll();return;}
+const s={...caoStyle};
+if(caoTool==='point'){caoEnts.push({id:'C'+(caoUid++),kind:'point',u:+p.u.toFixed(2),v:+p.v.toFixed(2),st:s});caoSel=caoEnts[caoEnts.length-1];selEpure=false;semaDirty=true;drawAll();return;}
+if(caoTool==='text'){const str=prompt('Texte :','Texte');if(str){caoEnts.push({id:'C'+(caoUid++),kind:'text',u:+p.u.toFixed(2),v:+p.v.toFixed(2),str,st:s});caoSel=caoEnts[caoEnts.length-1];selEpure=false;}semaDirty=true;drawAll();return;}
+caoDraft={id:'C'+(caoUid++),kind:caoTool==='circle'?'circle':caoTool==='rect'?'rect':caoTool==='arrow'?'arrow':'line',u:p.u,v:p.v,u1:p.u,v1:p.v,u2:p.u,v2:p.v,w:0,h:0,r:0,str:'',st:s};});
+ccao.addEventListener('mousemove',ev=>{if(view!=='cao')return;const p=caoUV(ev);
+document.getElementById('smX').textContent=fr(p.u);document.getElementById('smY').textContent=fr(p.v);
+document.getElementById('stPos').textContent=`x: ${p.u.toFixed(2)} m  y: ${p.v.toFixed(2)} m`;
+if(caoDraft){caoDraft.u2=p.u;caoDraft.v2=p.v;caoDraft.w=p.u-caoDraft.u;caoDraft.h=p.v-caoDraft.v;caoDraft.r=Math.hypot(p.u-caoDraft.u,p.v-caoDraft.v);drawAll();return;}
+if(caoPan&&ev.buttons===1){const dx=(ev.clientX-caoPan.x)/camC.k,dy=(ev.clientY-caoPan.y)/camC.k;
+if(Math.abs(dx)+Math.abs(dy)>0.005)caoPan.moved=true;
+camC.ox=caoPan.ox-dx;camC.oz=caoPan.oz+dy;drawAll();}});
+window.addEventListener('mouseup',()=>{if(caoDraft&&view==='cao'){const d=caoDraft;caoDraft=null;
+const ok=d.kind==='circle'?d.r>0.05:(d.kind==='rect'?(Math.abs(d.w)>0.05&&Math.abs(d.h)>0.05):Math.hypot(d.u2-d.u1??d.u2-d.u,d.v2-d.v1??d.v2-d.v)>0.05);
+if(ok){if(d.kind==='rect'){d.u=Math.min(d.u,d.u2);d.h=Math.abs(d.h);d.w=Math.abs(d.w);delete d.u1;delete d.v1;delete d.u2;delete d.v2;delete d.r;}
+caoEnts.push(d);caoSel=d;selEpure=false;}semaDirty=true;drawAll();}caoPan=null;});
+ccao.addEventListener('dblclick',ev=>{if(view!=='cao')return;if(caoSel&&caoSel.kind==='text'){const s=prompt('Texte :',caoSel.str);if(s!==null){caoSel.str=s;semaDirty=true;drawAll();}}});
+c2d.addEventListener('dblclick',()=>{if(sel){const l=prompt("Nom de la pièce :",sel.label);if(l){sel.label=l;refresh();}}});
+function restoreMove(e,json){const o=JSON.parse(json);for(const k of Object.keys(o))e[k]=o[k];}
+function moveEl(e,dx,dy){if(e.x1!==undefined){e.x1+=dx;e.y1+=dy;e.x2+=dx;e.y2+=dy;}else{if(e.x!==undefined)e.x+=dx;if(e.y!==undefined)e.y+=dy;}}
+function pick(mx,my){const tol=Math.max(.15,10/cam.s);let best=null,bd=1e9;
+for(const e of els){let d=1e9;
+if(e.x1!==undefined){d=distSeg(mx,my,e.x1,e.y1,e.x2,e.y2)-(e.th||e.b||.1)/2;if(d<0)d=0;}
+else if(e.w!==undefined){const inside=mx>=e.x&&mx<=e.x+e.w&&my>=e.y&&my<=e.y+(e.h||0);d=inside?0:Math.min(Math.abs(mx-e.x),Math.abs(mx-e.x-e.w),Math.abs(my-e.y),Math.abs(my-(e.y+(e.h||0))));}
+else{d=Math.hypot(mx-e.x,my-e.y)- (e.s||.1)/2;}
+if(d<tol&&d<bd){bd=d;best=e;}}
+return best;}
+function distSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy||1e-9;let t=((px-x1)*dx+(py-y1)*dy)/L2;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
+function drawDraft(){if(!draft)return;ctx2.strokeStyle="#f59e0b";ctx2.lineWidth=2;ctx2.setLineDash([5,4]);
+const ax=M2WX(draft.x0),ay=M2WY(draft.y0),bx=M2WX(draft.x1),by=M2WY(draft.y1);
+if(draft.tool==='slab'||draft.tool==='stair')ctx2.strokeRect(Math.min(ax,bx),Math.min(ay,by),Math.abs(bx-ax),Math.abs(by-ay));
+else{ctx2.beginPath();ctx2.moveTo(ax,ay);ctx2.lineTo(bx,by);ctx2.stroke();}
+ctx2.setLineDash([]);}
+/* 3D orbit */
+let orbiting=null;
+c3d.addEventListener('mousedown',e=>{orbiting={x:e.clientX,y:e.clientY,a:cam3.a,p:cam3.p};});
+window.addEventListener('mousemove',e=>{if(orbiting){cam3.a=orbiting.a+(e.clientX-orbiting.x)*.008;cam3.p=Math.min(1.4,Math.max(.25,orbiting.p+(e.clientY-orbiting.y)*.006));draw3();}});
+window.addEventListener('mouseup',()=>{orbiting=null;caoPan=null;});
+c3d.addEventListener('wheel',e=>{e.preventDefault();cam3.s=Math.min(160,Math.max(10,cam3.s*(e.deltaY<0?1.1:1/1.1)));draw3();},{passive:false});
+/* ===== Propriétés ===== */
+function renderProps(){const d=document.getElementById('props');document.getElementById('pId').textContent=sel?sel.id:'';
+if(!sel){d.innerHTML=`<p style="color:var(--mut);font-size:12.5px">Sélectionnez un élément, ou dessinez-en un nouveau.</p>`;return;}
+const e=sel;const matOpts=Object.entries(MATS).map(([k,v])=>`<option value="${k}" ${e.mat===k?'selected':''}>${v.n}</option>`).join('');
+let h=`<div class="row"><label>Type</label><input value="${e.type} — ${e.label||''}" disabled></div>
+<div class="row"><label>Nom</label><input id="f_label" value="${e.label||''}"></div>
+<div class="row"><label>Matériau</label><select id="f_mat">${matOpts}</select></div>`;
+if(e.x1!==undefined)h+=`<div class="grid2"><div class="row"><label>X1</label><input id="f_x1" type="number" step="0.1" value="${e.x1}"></div><div class="row"><label>Y1</label><input id="f_y1" type="number" step="0.1" value="${e.y1}"></div><div class="row"><label>X2</label><input id="f_x2" type="number" step="0.1" value="${e.x2}"></div><div class="row"><label>Y2</label><input id="f_y2" type="number" step="0.1" value="${e.y2}"></div></div>`;
+else h+=`<div class="grid2"><div class="row"><label>X</label><input id="f_x" type="number" step="0.1" value="${e.x}"></div><div class="row"><label>Y</label><input id="f_y" type="number" step="0.1" value="${e.y}"></div></div>`;
+if(e.type==='wall')h+=`<div class="grid2"><div class="row"><label>Ép (m)</label><input id="f_th" type="number" step="0.01" value="${e.th}"></div><div class="row"><label>Haut (m)</label><input id="f_h" type="number" step="0.1" value="${e.h}"></div></div>`;
+if(e.type==='beam'||e.type==='rafter')h+=`<div class="grid2"><div class="row"><label>Larg b</label><input id="f_b" type="number" step="0.01" value="${e.b}"></div><div class="row"><label>Haut h</label><input id="f_h" type="number" step="0.01" value="${e.h}"></div></div><div class="row"><label>Altitude Z</label><input id="f_z" type="number" step="0.1" value="${e.z}"></div>`;
+if(e.type==='post')h+=`<div class="grid2"><div class="row"><label>Section</label><input id="f_s" type="number" step="0.01" value="${e.s}"></div><div class="row"><label>Hauteur</label><input id="f_h" type="number" step="0.1" value="${e.h}"></div></div>`;
+if(e.type==='slab')h+=`<div class="grid2"><div class="row"><label>Larg</label><input id="f_w" type="number" step="0.1" value="${e.w}"></div><div class="row"><label>Long</label><input id="f_hh" type="number" step="0.1" value="${e.h}"></div><div class="row"><label>Ép</label><input id="f_th" type="number" step="0.01" value="${e.th}"></div><div class="row"><label>Z0</label><input id="f_h0" type="number" step="0.1" value="${e.h0}"></div></div>`;
+if(e.type==='stair')h+=`<div class="grid2"><div class="row"><label>Larg</label><input id="f_w" type="number" step="0.1" value="${e.w}"></div><div class="row"><label>Long</label><input id="f_hh" type="number" step="0.1" value="${e.h}"></div><div class="row"><label>Marches</label><input id="f_steps" type="number" step="1" value="${e.steps}"></div><div class="row"><label>H totale</label><input id="f_htot" type="number" step="0.1" value="${e.htot}"></div></div>`;
+if(e.type==='opening')h+=`<div class="grid2"><div class="row"><label>Largeur</label><input id="f_w" type="number" step="0.05" value="${e.w}"></div><div class="row"><label>Hauteur</label><input id="f_oh" type="number" step="0.05" value="${e.oh}"></div></div><div class="row"><label>Ouvrage</label><select id="f_ot"><option ${e.ot==='Porte'?'selected':''}>Porte</option><option ${e.ot==='Fenêtre'?'selected':''}>Fenêtre</option><option ${e.ot==='Baie'?'selected':''}>Baie</option></select></div>`;
+const m=metrics(e);h+=`<div class="kpi" style="margin-top:6px"><div><b>${m.len.toFixed(2)} m</b><span>Longueur</span></div><div><b>${m.vol.toFixed(3)} m³</b><span>Volume</span></div><div><b>${Math.round(m.price)} €</b><span>Prix</span></div></div>`;
+d.innerHTML=h;
+const g=id=>document.getElementById(id);const num=(id,fn)=>{const n=g(id);if(n)n.oninput=()=>{fn(parseFloat(n.value)||0);drawAll();renderList();};};
+if(g('f_label'))g('f_label').oninput=v=>{e.label=v.target.value;renderList();};
+if(g('f_mat'))g('f_mat').oninput=v=>{e.mat=v.target.value;drawAll();renderList();};
+num('f_x1',v=>e.x1=v);num('f_y1',v=>e.y1=v);num('f_x2',v=>e.x2=v);num('f_y2',v=>e.y2=v);
+num('f_x',v=>e.x=v);num('f_y',v=>e.y=v);num('f_th',v=>{if(e.th!==undefined)e.th=v;if(e.type==='slab')e.th=v;});
+num('f_h',v=>e.h=v);num('f_b',v=>e.b=v);num('f_z',v=>e.z=v);num('f_s',v=>e.s=v);
+num('f_w',v=>e.w=v);num('f_hh',v=>e.h=v);num('f_h0',v=>e.h0=v);num('f_steps',v=>e.steps=Math.max(1,Math.round(v)));num('f_htot',v=>e.htot=v);num('f_oh',v=>e.oh=v);
+if(g('f_ot'))g('f_ot').oninput=v=>{e.ot=v.target.value;drawAll();renderList();};}
+/* ===== UI wiring ===== */
+document.querySelectorAll('.tool').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));b.classList.add('active');tool=b.dataset.tool;
+document.getElementById('hint').textContent={select:"Sélection : cliquer = choisir, glisser = déplacer, Suppr = effacer.",wall:"Paroi : cliquez-glissez pour tracer un mur ossature.",beam:"Poutre : cliquez-glissez (altitude réglable à droite).",rafter:"Chevron : cliquez-glissez du faîtage vers le mur.",post:"Poteau : cliquez pour poser un montant.",slab:"Plancher : cliquez-glissez un rectangle.",stair:"Escalier : cliquez-glissez l'emprise de la volée.",opening:"Ouverture : cliquez-glissez une largeur sur une paroi.",dim:"Cotation : cliquez-glissez pour coter une distance."}[tool];});
+document.querySelectorAll('.viewtabs button[data-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.viewtabs button[data-view]').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;
+c2d.style.display=view==='plan'?'block':'none';ccao.style.display=view==='cao'?'block':'none';c3d.style.display=view==='v3d'?'block':'none';csec.style.display=view==='sec'?'block':'none';document.getElementById('plist').style.display=view==='list'?'block':'none';
+document.getElementById('caobar').classList.toggle('show',view==='cao');
+document.getElementById('semaUI').classList.toggle('show',view==='cao');
+document.getElementById('v3dstyle').style.display=view==='v3d'?'flex':'none';
+if(view==='cao'){caoFitted=false;semaDirty=true;initSema();}
+document.getElementById('hint').textContent=view==='cao'?"Atelier CAO type SEMA — épure « elevation rive biaise » : molette = zoom, glisser = panoramique, outils CAO à droite.":document.getElementById('hint').textContent;
+drawAll();});
+document.querySelectorAll('#v3dstyle button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#v3dstyle button').forEach(x=>x.classList.remove('active'));b.classList.add('active');style3d=b.dataset['3d'];drawAll();});
+for(const id of['caoTheme','caoDims','caoHatch','caoLabels','caoCart','caoScale'])document.getElementById(id).onchange=drawAll;
+document.getElementById('bSvg').onclick=exportSVG;
+document.getElementById('bPrint').onclick=()=>window.print();
+/* ===== Panneaux SEMA : outils, motifs, données, dialogue ===== */
+const SEMA_TOOLS=[['select','➤','Sélection'],['point','•','Point'],['point2','◉','Point à 2 distances'],['line','╱','Ligne'],['rect','▭','Rectangle'],['rect','▦','Boîte'],['rect','⬠','Polygone'],['circle','○','Cercle'],['circle','⬭','Ellipse'],['text','A','Texte'],['arrow','→','Flèche'],['noop','🖼','Image']];
+const MOTIFS=[['Plein','#1a1a1a','Bleu plein','background:#1a1a1a'],['Hachuré','#555','isolat...','repeating-linear-gradient(45deg,#fff 0 2px,#555 2px 3px)'],['Croisé','#333','Noir, crois...','repeating-linear-gradient(45deg,#fff 0 2px,#333 2px 3px),repeating-linear-gradient(-45deg,#fff 0 2px,#333 2px 3px)'],['Pointillé','#666','Noir, enduit','radial-gradient(circle,#666 1px,transparent 1.2px) 0 0/5px 5px,#fff'],['Hachuré','#2a6a2a','Noir, film','repeating-linear-gradient(90deg,#fff 0 3px,#2a6a2a 3px 4px)'],['Lamellé','#8a5a2b','Noir, gravier','repeating-linear-gradient(0deg,#d9a45b 0 3px,#8a5a2b 3px 4px)'],['Lamellé','#444','Noir, lamel...','repeating-linear-gradient(0deg,#fff 0 2px,#444 2px 4px)'],['Hachuré','#444','Noir, m...','repeating-linear-gradient(90deg,#fff 0 2px,#444 2px 3px)'],['Croisé','#444','Noir, pav...','repeating-linear-gradient(45deg,#cfe0b8 0 2px,#444 2px 3px),repeating-linear-gradient(-45deg,#cfe0b8 0 2px,#444 2px 3px)'],['Pointillé','#4a7a4a','Noir, prairie','radial-gradient(circle,#4a7a4a 1.2px,transparent 1.4px) 0 0/6px 6px,#e8f2e0'],['Hachuré','#4a7ac9','Noir, rayons','repeating-linear-gradient(45deg,#dbe9fb 0 3px,#4a7ac9 3px 4px)'],['Plein','#b9e6a8','Noir, surfa...','background:#b9e6a8']];
+let semaInit=false;
+function setCaoTool(t){if(t==='noop'){msg('Image : non géré dans cette maquette.');return;}
+caoTool=(t==='point2')?'point':t;
+document.querySelectorAll('#semaTools .stool').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+for(const[id,kind]of[['smLine','line'],['smRect','rect'],['smCirc','circle'],['smTxt','text'],['smArr','arrow']])document.getElementById(id).classList.toggle('on',caoTool===kind);}
+function initSema(){
+if(semaInit)return;semaInit=true;
+document.getElementById('semaTools').innerHTML=SEMA_TOOLS.map(([t,g,n])=>`<button class="stool${t==='select'?' on':''}" data-t="${t}"><span class="g">${g}</span>${n}</button>`).join('');
+document.querySelectorAll('#semaTools .stool').forEach(b=>b.onclick=()=>setCaoTool(b.dataset.t));
+document.getElementById('motifGrid').innerHTML=MOTIFS.map((m,i)=>`<div class="sw${i===11?' on':''}" data-i="${i}" title="${m[2]}" style="${m[3]}"><span>${m[2]}</span></div>`).join('');
+document.querySelectorAll('#motifGrid .sw').forEach(s=>s.onclick=()=>{
+document.querySelectorAll('#motifGrid .sw').forEach(x=>x.classList.remove('on'));s.classList.add('on');
+const m=MOTIFS[+s.dataset.i];caoStyle.motif=m[0];if(m[0]==='Plein')caoStyle.fond=(m[1]==='#1a1a1a')?'#1a1a1a':m[1];
+const tgt=caoSel?caoSel.st:(selEpure?epureStyle:caoStyle);
+tgt.motif=m[0];if(m[0]==='Plein')tgt.fond=caoStyle.fond;
+document.getElementById('semaPrev').style.background=m[3];semaDirty=true;drawAll();});
+document.getElementById('semaPrev').style.background=MOTIFS[11][3];
+for(const[id,kind]of[['smLine','line'],['smRect','rect'],['smCirc','circle'],['smTxt','text'],['smArr','arrow']])document.getElementById(id).onclick=()=>setCaoTool(kind);
+document.getElementById('smFit').onclick=()=>{caoFitted=false;drawAll();};
+document.getElementById('smZm').onclick=()=>{camC.k=Math.min(220,camC.k*1.2);drawAll();};
+document.getElementById('smZd').onclick=()=>{camC.k=Math.max(8,camC.k/1.2);drawAll();};
+document.getElementById('smDel').onclick=()=>{if(caoSel){caoEnts=caoEnts.filter(e=>e.id!==caoSel.id);caoSel=null;semaDirty=true;drawAll();}};
+document.getElementById('semaX').onclick=()=>document.querySelector('.viewtabs button[data-view="plan"]').click();
+document.getElementById('smFrom').onchange=e=>{const v=e.target.value;
+if(v==='EPURE'){caoSel=null;selEpure=true;}else{caoSel=caoEnts.find(t=>t.id===v)||null;selEpure=false;}semaDirty=true;drawAll();};
+document.getElementById('smAngle').onchange=e=>{const a=parseFloat(e.target.value);if(isNaN(a))return;
+if(caoSel&&(caoSel.kind==='line'||caoSel.kind==='arrow')){const L=Math.hypot(caoSel.u2-caoSel.u1,caoSel.v2-caoSel.v1),r=a*Math.PI/180;
+caoSel.u2=caoSel.u1+Math.cos(r)*L;caoSel.v2=caoSel.v1+Math.sin(r)*L;semaDirty=true;drawAll();}
+else if(selEpure){document.getElementById('inP').value=a;caoFitted=false;semaDirty=true;refresh();}};
+document.getElementById('smLong').onchange=e=>{const L=parseFloat(e.target.value);if(isNaN(L)||L<=0)return;
+if(caoSel&&(caoSel.kind==='line'||caoSel.kind==='arrow')){const a=Math.atan2(caoSel.v2-caoSel.v1,caoSel.u2-caoSel.u1);
+caoSel.u2=caoSel.u1+Math.cos(a)*L;caoSel.v2=caoSel.v1+Math.sin(a)*L;semaDirty=true;drawAll();}};}
+function renderDon(){const g=document.getElementById('donGrid');
+const tgt=caoSel?caoSel.st:(selEpure?epureStyle:null);
+if(!tgt){g.innerHTML=`<div class="k">Objet</div><div class="v"><i style="color:#888">rien de marqué — cliquez la pièce verte ou une annotation</i></div>`;return;}
+const nm=caoSel?`${caoSel.kind} ${caoSel.id}`:'Chevron rive (épure)';
+const row=(k,inner)=>`<div class="k">${k}</div><div class="v">${inner}</div>`;
+g.innerHTML=`<div class="k">Objet</div><div class="v"><b>${nm}</b></div>`
++row('Ligne contour',`<input type="color" id="d_cont" value="${tgt.contour}">`)
++row('Remplissage',`<select id="d_remp"><option${tgt.remplissage==='Généré'?' selected':''}>Généré</option><option${tgt.remplissage==='Aucun'?' selected':''}>Aucun</option><option${tgt.remplissage==='Plein'?' selected':''}>Plein</option></select>`)
++row('Type motif',`<select id="d_mot"><option${tgt.motif==='Plein'?' selected':''}>Plein</option><option${tgt.motif==='Hachuré'?' selected':''}>Hachuré</option><option${tgt.motif==='Croisé'?' selected':''}>Croisé</option><option${tgt.motif==='Pointillé'?' selected':''}>Pointillé</option><option${tgt.motif==='Lamellé'?' selected':''}>Lamellé</option></select>`)
++row('Type hachure',`<select id="d_hac"><option>ISO U</option><option>ISO A</option><option>ANSI 31</option></select>`)
++row('Taille',`<select id="d_tai"><option${tgt.taille==='zoom'?' selected':''}>zoom</option><option${tgt.taille==='fixe'?' selected':''}>fixe</option></select>`)
++row('Facteur',`<select id="d_fac"><option>50 %</option><option${tgt.facteur===100?' selected':''}>100 %</option><option>150 %</option><option>200 %</option></select>`)
++row('Angle',`<select id="d_ang"><option>automat.</option><option>0°</option><option>45°</option></select>`)
++row('Couleur hachure',`<select id="d_ch"><option>CONTOUR</option><option>NOIR</option></select>`)
++row('Transparent',`<select id="d_tra"><option value="1"${tgt.transparent?' selected':''}>oui</option><option value="0"${!tgt.transparent?' selected':''}>non</option></select>`)
++row('Couleur fond',`<input type="color" id="d_fond" value="${tgt.fond.length===7?tgt.fond:'#ffffff'}">`);
+const on=(id,fn)=>{const n=document.getElementById(id);if(n)n.onchange=e=>{fn(e.target.value);semaDirty=true;drawAll();};};
+on('d_cont',v=>tgt.contour=v);on('d_remp',v=>{tgt.remplissage=v;tgt.transparent=(v!=='Plein'&&v!=='Généré')?true:(v==='Généré'?tgt.transparent:false);});
+on('d_mot',v=>tgt.motif=v);on('d_hac',v=>tgt.hachure=v);on('d_tai',v=>tgt.taille=v);
+on('d_fac',v=>tgt.facteur=parseInt(v)||100);on('d_ang',v=>tgt.angle=v);on('d_ch',v=>tgt.chachure=v);
+on('d_tra',v=>tgt.transparent=(v==='1'));on('d_fond',v=>{tgt.fond=v;tgt.transparent=false;});}
+function refreshFrom(){const s=document.getElementById('smFrom');
+s.innerHTML=`<option value="">—</option><option value="EPURE"${selEpure&&!caoSel?' selected':''}>chevron rive (épure)</option>`
++caoEnts.map(t=>`<option value="${t.id}"${caoSel&&caoSel.id===t.id?' selected':''}>${t.kind} ${t.id}</option>`).join('');
+const n=(caoSel?1:0)+(selEpure&&!caoSel?1:0);
+document.getElementById('smCount').textContent=`${n} pièce${n>1?'s':''} ${n>1?'sont':'est'} marquée${n>1?'s':''}.`;
+if(caoSel&&(caoSel.kind==='line'||caoSel.kind==='arrow')){
+document.getElementById('smAngle').value=fr(entAng(caoSel),1).replace(',','.');
+document.getElementById('smLong').value=fr(entLen(caoSel)).replace(',','.');
+document.getElementById('smInfo').textContent=`${caoSel.kind} ${caoSel.id}`;}
+else{const ep=epure();document.getElementById('smAngle').value=fr(ep.P,1).replace(',','.');
+document.getElementById('smLong').value=fr(ep.len).replace(',','.');
+document.getElementById('smInfo').textContent='chevron rive — pente / vraie longueur';}}
+document.getElementById('zoom').oninput=e=>{cam.s=parseFloat(e.target.value);drawAll();};
+document.getElementById('gridStep').onchange=drawAll;
+document.getElementById('bFit').onclick=()=>{if(!els.length)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const e of els){const b=bbox(e);x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}cam.x=(x0+x1)/2;cam.y=(y0+y1)/2;drawAll();};
+document.getElementById('bDel').onclick=()=>{if(sel){els=els.filter(x=>x.id!==sel.id);sel=null;refresh();}};
+document.getElementById('bNew').onclick=()=>{if(confirm("Nouveau projet ? (projet courant effacé)")){els=[];dims=[];sel=null;refresh();}};
+document.getElementById('bDemo').onclick=demo;
+document.getElementById('bSave').onclick=()=>{localStorage.setItem('timbercao_v1',JSON.stringify({els,dims,uid,caoEnts,caoUid}));msg("Projet sauvé en local.");};
+document.getElementById('bLoad').onclick=()=>{try{const o=JSON.parse(localStorage.getItem('timbercao_v1'));if(!o)return msg("Aucune sauvegarde locale.");els=o.els;dims=o.dims||[];uid=o.uid||100;caoEnts=o.caoEnts||[];caoUid=o.caoUid||1;caoSel=null;selEpure=true;semaDirty=true;refresh();msg("Projet rechargé.");}catch{msg("Sauvegarde illisible.");}};
+document.getElementById('bJson').onclick=()=>{dl("projet-timbercao.json",JSON.stringify({app:"TimberCAO",els,dims},null,2),"application/json");};
+document.getElementById('bCsv').onclick=()=>{let s="piece;type;materiau;section;long_m;vol_m3;masse_kg;prix_eur\n";for(const e of els){const m=metrics(e);s+=`"${e.label} ${e.id}";${e.type};${(MATS[e.mat]||{}).n};${secOf(e)};${m.len.toFixed(2)};${m.vol.toFixed(3)};${Math.round(m.mass)};${Math.round(m.price)}\n`;}dl("debit-timbercao.csv",s,"text/csv");};
+document.getElementById('bBtl').onclick=()=>{let s="# BTL simplifié TimberCAO (maquette) — pièce;longueur;section;angle\n";for(const e of els){if(['beam','rafter','post','wall'].includes(e.type)){const m=metrics(e);const ang=e.x1!==undefined?(Math.atan2(e.y2-e.y1,e.x2-e.x1)*180/Math.PI).toFixed(1):"0.0";s+=`${e.label}_${e.id};${(m.len*1000).toFixed(0)};${secOf(e)};${ang}\n`;}}dl("export-machine.btl",s,"text/plain");msg("Export machine (BTL simplifié) téléchargé.");};
+document.getElementById('bHelp').onclick=()=>alert("TimberCAO — mini-CAO bois type SEMA\n\n1. Dessinez en Plan 2D (parois, poutres, planchers…)\n2. Vérifiez en 3D / Élévation\n3. Chiffrez dans Quantitatif (débit CSV)\n4. Assistants = création auto bâtiment / ossature / toiture / escalier\n\nMolette = zoom · glisser (outil Sélection) = déplacer · Suppr = effacer.");
+document.getElementById('aBat').onclick=()=>{const L=parseFloat(document.getElementById('inL').value)||6,W=parseFloat(document.getElementById('inW').value)||4,H=parseFloat(document.getElementById('inH').value)||2.5;
+els.push(mk('slab',0,0,L,W,{th:.2,mat:'clt',label:'Plancher'}));els.push(mk('wall',0,0,L,0,{th:.14,h:H,mat:'epicea',label:'Paroi'}));els.push(mk('wall',L,0,L,W,{th:.14,h:H,mat:'epicea',label:'Paroi'}));els.push(mk('wall',L,W,0,W,{th:.14,h:H,mat:'epicea',label:'Paroi'}));els.push(mk('wall',0,W,0,0,{th:.14,h:H,mat:'epicea',label:'Paroi'}));refresh();msg(`Bâtiment ${L}×${W}×${H} m créé.`);};
+document.getElementById('aOss').onclick=()=>{let n=0;for(const e of [...els]){if(e.type==='wall'){const L=Math.hypot(e.x2-e.x1,e.y2-e.y1);const k=Math.floor(L/.6);for(let i=0;i<=k;i++){const f=i/Math.max(1,k);els.push(mk('post',e.x1+(e.x2-e.x1)*f,e.y1+(e.y2-e.y1)*f,0,0,{s:.09,h:e.h,mat:'epicea',label:'Montant'}));n++;}}}refresh();msg(`${n} montants d'ossature générés (entraxe ~60 cm).`);};
+document.getElementById('aToit').onclick=()=>{const P=parseFloat(document.getElementById('inP').value)||30;let L=6,W=4,H=2.5;const sl=els.find(e=>e.type==='slab');if(sl){L=sl.w;W=sl.h;}const wl=els.find(e=>e.type==='wall');if(wl&&wl.h)H=wl.h;roofGen(L,W,H,P);};
+document.getElementById('aEsc').onclick=()=>{els.push(mk('stair',2,.5,1,2.4,{steps:13,htot:2.3,mat:'chene',label:'Escalier'}));refresh();msg("Escalier ajouté — déplacez-le dans le plan.");};
+function dl(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+function msg(t){document.getElementById('stMsg').textContent=t;document.getElementById('layers').innerHTML=['Parois','Poutres','Chevrons','Poteaux','Planchers','Escaliers','Ouvertures'].map(l=>{const k={Parois:'wall',Poutres:'beam',Chevrons:'rafter',Poteaux:'post',Planchers:'slab',Escaliers:'stair',Ouvertures:'opening'}[l];const n=els.filter(e=>e.type===k).length;return`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 2px"><span>● ${l}</span><b>${n}</b></div>`;}).join('');}
+function refresh(){renderProps();renderList();msg("");drawAll();}
+function drawAll(){if(view==='plan')draw2();else if(view==='cao')drawCAO();else if(view==='v3d')draw3();else if(view==='sec')drawSec();else renderList();}
+window.addEventListener('resize',drawAll);
+/* init */
+(function(){try{const o=JSON.parse(localStorage.getItem('timbercao_v1'));if(o&&o.els&&o.els.length){els=o.els;dims=o.dims||[];uid=o.uid||100;refresh();return;}}catch{}demo();})();
+</script>
+</body>
+</html>
